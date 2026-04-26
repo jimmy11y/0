@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, ChevronDown, ChevronRight, Loader2, Copy, Check } from 'lucide-react';
+import { Brain, ChevronDown, ChevronRight, Loader2, Copy, Check, Zap, Globe, FileText, Edit3, Search, FolderOpen, Terminal, Bot } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { MessageActions } from './message-actions';
 import type { ChatMessage, ContentBlock, ToolUseBlock, ToolResultBlock, ThinkingBlock } from '@/types/agent';
@@ -108,14 +108,13 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
 }
 
 // ============================================
-// Markdown Renderer - Shared component
+// Markdown Renderer
 // ============================================
 function MarkdownRenderer({ content }: { content: string }) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
 
-  // Complete any open code fences during streaming to prevent raw text
-  const processedContent = content.replace(/```([\w]*)\n([\s\S]*?)(?=```|$)/g, (match, lang, code) => {
+  const processedContent = content.replace(/```([\w]*)\n([\s\S]*?)(?=```|$)/g, (match) => {
     if (!match.endsWith('```')) return match + '```';
     return match;
   });
@@ -127,10 +126,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         code({ className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || '');
           const codeString = String(children).replace(/\n$/, '');
-          // A code element is inline ONLY if it has no language class AND no newlines
-          // If it has a className (from fenced block) or contains newlines → block
           const isInline = !className && !codeString.includes('\n');
-
           if (isInline) {
             return (
               <code className={`rounded px-1.5 py-0.5 text-xs font-mono ${isLight ? 'bg-black/[0.06] text-orange-700/80' : 'bg-white/10 text-orange-300/80'}`} {...props}>
@@ -138,53 +134,22 @@ function MarkdownRenderer({ content }: { content: string }) {
               </code>
             );
           }
-
-          return (
-            <CodeBlock language={match?.[1] || 'text'} code={codeString} />
-          );
+          return <CodeBlock language={match?.[1] || 'text'} code={codeString} />;
         },
-        p({ children }) {
-          return <p className="mb-2 last:mb-0 leading-7">{children}</p>;
-        },
-        h1({ children }) {
-          return <h1 className={`text-xl font-bold mt-4 mb-2 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h1>;
-        },
-        h2({ children }) {
-          return <h2 className={`text-lg font-semibold mt-4 mb-1.5 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h2>;
-        },
-        h3({ children }) {
-          return <h3 className={`text-base font-semibold mt-3 mb-1 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h3>;
-        },
-        ul({ children }) {
-          return <ul className="my-1.5 ml-4 space-y-1 list-disc list-outside">{children}</ul>;
-        },
-        ol({ children }) {
-          return <ol className="my-1.5 ml-4 space-y-1 list-decimal list-outside">{children}</ol>;
-        },
-        li({ children }) {
-          return <li className={isLight ? 'text-black/70 leading-6' : 'text-white/80 leading-6'}>{children}</li>;
-        },
-        strong({ children }) {
-          return <strong className={`font-semibold ${isLight ? 'text-black/90' : 'text-white/95'}`}>{children}</strong>;
-        },
-        a({ href, children }) {
-          return <a href={href} className="text-orange-500/80 underline underline-offset-2 hover:text-orange-500" target="_blank" rel="noopener">{children}</a>;
-        },
-        blockquote({ children }) {
-          return <blockquote className={`border-l-2 pl-3 my-2 italic ${isLight ? 'border-orange-500/30 text-black/50' : 'border-orange-400/30 text-white/60'}`}>{children}</blockquote>;
-        },
-        table({ children }) {
-          return <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>;
-        },
-        th({ children }) {
-          return <th className={`border px-2 py-1 text-left ${isLight ? 'border-black/10 bg-black/[0.03] text-black/70' : 'border-white/10 bg-white/5 text-white/70'}`}>{children}</th>;
-        },
-        td({ children }) {
-          return <td className={`border px-2 py-1 ${isLight ? 'border-black/10 text-black/60' : 'border-white/10 text-white/60'}`}>{children}</td>;
-        },
-        hr() {
-          return <hr className={isLight ? 'border-black/10 my-4' : 'border-white/10 my-4'} />;
-        },
+        p({ children }) { return <p className="mb-2 last:mb-0 leading-7">{children}</p>; },
+        h1({ children }) { return <h1 className={`text-xl font-bold mt-4 mb-2 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h1>; },
+        h2({ children }) { return <h2 className={`text-lg font-semibold mt-4 mb-1.5 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h2>; },
+        h3({ children }) { return <h3 className={`text-base font-semibold mt-3 mb-1 ${isLight ? 'text-black/90' : 'text-white/90'}`}>{children}</h3>; },
+        ul({ children }) { return <ul className="my-1.5 ml-4 space-y-1 list-disc list-outside">{children}</ul>; },
+        ol({ children }) { return <ol className="my-1.5 ml-4 space-y-1 list-decimal list-outside">{children}</ol>; },
+        li({ children }) { return <li className={isLight ? 'text-black/70 leading-6' : 'text-white/80 leading-6'}>{children}</li>; },
+        strong({ children }) { return <strong className={`font-semibold ${isLight ? 'text-black/90' : 'text-white/95'}`}>{children}</strong>; },
+        a({ href, children }) { return <a href={href} className="text-orange-500/80 underline underline-offset-2 hover:text-orange-500" target="_blank" rel="noopener">{children}</a>; },
+        blockquote({ children }) { return <blockquote className={`border-l-2 pl-3 my-2 italic ${isLight ? 'border-orange-500/30 text-black/50' : 'border-orange-400/30 text-white/60'}`}>{children}</blockquote>; },
+        table({ children }) { return <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>; },
+        th({ children }) { return <th className={`border px-2 py-1 text-left ${isLight ? 'border-black/10 bg-black/[0.03] text-black/70' : 'border-white/10 bg-white/5 text-white/70'}`}>{children}</th>; },
+        td({ children }) { return <td className={`border px-2 py-1 ${isLight ? 'border-black/10 text-black/60' : 'border-white/10 text-white/60'}`}>{children}</td>; },
+        hr() { return <hr className={isLight ? 'border-black/10 my-4' : 'border-white/10 my-4'} />; },
       }}
     >
       {processedContent}
@@ -193,7 +158,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 }
 
 // ============================================
-// Code Block - With syntax highlighting & copy
+// Code Block — Claude-style header + syntax highlight + copy label
 // ============================================
 function CodeBlock({ language, code }: { language: string; code: string }) {
   const { resolvedTheme } = useTheme();
@@ -208,27 +173,25 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
 
   return (
     <div className={`my-3 rounded-lg overflow-hidden border ${isLight ? 'border-black/[0.08]' : 'border-white/10'}`}>
+      {/* Header bar: language + "Copy" button */}
       <div className={`flex items-center justify-between px-3 py-1.5 border-b ${isLight ? 'bg-[#fafafa] border-black/[0.06]' : 'bg-[#282c34] border-white/5'}`}>
-        <span className={`text-[10px] font-mono ${isLight ? 'text-black/35' : 'text-white/40'}`}>{language}</span>
+        <span className={`text-[10px] font-mono uppercase tracking-wide ${isLight ? 'text-black/35' : 'text-white/40'}`}>{language}</span>
         <button
           onClick={handleCopy}
-          className={`rounded p-1 transition-colors ${isLight ? 'text-black/20 hover:bg-black/5 hover:text-black/50' : 'text-white/20 hover:bg-white/10 hover:text-white/50'}`}
-          title="Copy code"
+          className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] transition-colors ${isLight ? 'text-black/20 hover:bg-black/5 hover:text-black/50' : 'text-white/20 hover:bg-white/10 hover:text-white/50'}`}
         >
-          {copied ? <Check className="h-3 w-3 text-green-500/70" /> : <Copy className="h-3 w-3" />}
+          {copied ? (
+            <><Check className="h-3 w-3 text-green-500/70" /><span className="text-green-500/70">Copied!</span></>
+          ) : (
+            <><Copy className="h-3 w-3" /><span>Copy</span></>
+          )}
         </button>
       </div>
       <SyntaxHighlighter
         style={isLight ? oneLight : oneDark}
         language={language}
         PreTag="div"
-        customStyle={{
-          margin: 0,
-          borderRadius: 0,
-          fontSize: '12px',
-          background: isLight ? '#fafafa' : '#1e1e2e',
-          padding: '12px',
-        }}
+        customStyle={{ margin: 0, borderRadius: 0, fontSize: '12px', background: isLight ? '#fafafa' : '#1e1e2e', padding: '12px' }}
       >
         {code}
       </SyntaxHighlighter>
@@ -237,7 +200,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
 }
 
 // ============================================
-// Claude-Style Grouped Blocks - Clean, minimal
+// Block Grouper — separates text vs thinking/tool groups
 // ============================================
 function ClaudeStyleBlocks({ blocks, isStreaming }: { blocks: ContentBlock[]; isStreaming?: boolean }) {
   const groups: Array<{ type: 'thinking-group' | 'text'; blocks: ContentBlock[] }> = [];
@@ -263,10 +226,7 @@ function ClaudeStyleBlocks({ blocks, isStreaming }: { blocks: ContentBlock[]; is
     }
   }
   if (currentGroup.length > 0) {
-    groups.push({
-      type: currentGroupType === 'text' ? 'text' : 'thinking-group',
-      blocks: [...currentGroup]
-    });
+    groups.push({ type: currentGroupType === 'text' ? 'text' : 'thinking-group', blocks: [...currentGroup] });
   }
 
   return (
@@ -288,7 +248,7 @@ function ClaudeStyleBlocks({ blocks, isStreaming }: { blocks: ContentBlock[]; is
 }
 
 // ============================================
-// Claude-Style Thinking Group - Minimal, clean like Claude
+// Thinking Group — Brain + summary + live steps + collapsible detail
 // ============================================
 function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; isStreaming?: boolean }) {
   const [expanded, setExpanded] = useState(false);
@@ -296,38 +256,37 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
   const isLight = resolvedTheme === 'light';
   const anyStreaming = blocks.some(b => 'isStreaming' in b && b.isStreaming);
 
+  // Auto-expand while streaming, auto-collapse when done
   useEffect(() => {
     if (anyStreaming) setExpanded(true);
   }, [anyStreaming]);
+  useEffect(() => {
+    if (!anyStreaming && isStreaming === false) {
+      const t = setTimeout(() => setExpanded(false), 600);
+      return () => clearTimeout(t);
+    }
+  }, [anyStreaming, isStreaming]);
 
-  const totalDuration = blocks.reduce((sum, b) => {
-    if ('duration' in b && typeof b.duration === 'number') return sum + b.duration;
-    return sum;
-  }, 0);
-
+  const totalDuration = blocks.reduce((sum, b) => 'duration' in b && typeof b.duration === 'number' ? sum + b.duration : sum, 0);
   const toolBlocks = blocks.filter(b => b.type === 'tool_use') as ToolUseBlock[];
   const completedTools = toolBlocks.filter(b => b.status === 'completed');
   const runningTool = toolBlocks.find(b => b.status !== 'completed');
-  const runningToolDisplay = runningTool
-    ? (TOOL_DISPLAY[runningTool.name] || { label: runningTool.name })
-    : null;
+  const runningToolDisplay = runningTool ? (TOOL_DISPLAY[runningTool.name] || { label: runningTool.name }) : null;
 
   const summaryText = anyStreaming
-    ? runningToolDisplay
-      ? runningToolDisplay.label + '...'
-      : 'Thinking...'
+    ? runningToolDisplay ? runningToolDisplay.label + '...' : 'Thinking...'
     : totalDuration > 0
       ? `Thought for ${formatDuration(totalDuration)}`
-      : 'Thoughts';
+      : completedTools.length > 0
+        ? `Used ${completedTools.length} tool${completedTools.length > 1 ? 's' : ''}`
+        : 'Thoughts';
 
   return (
     <div className="relative">
-      {/* Collapsed summary - Claude style: just a clean line */}
+      {/* Toggle button */}
       <button
         onClick={() => !anyStreaming && setExpanded(!expanded)}
-        className={`flex items-center gap-2.5 py-1 text-left transition-colors ${
-          anyStreaming ? 'cursor-default' : 'group/btn cursor-pointer'
-        }`}
+        className={`flex items-center gap-2.5 py-1 text-left transition-colors ${anyStreaming ? 'cursor-default' : 'group/btn cursor-pointer'}`}
       >
         {anyStreaming ? (
           <div className="relative">
@@ -339,19 +298,14 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
         )}
         <span className={`text-xs font-medium transition-colors ${
           anyStreaming
-            ? isLight
-              ? 'text-orange-600/85 animate-thinking-wave'
-              : 'text-orange-400/85 animate-thinking-wave'
+            ? isLight ? 'text-orange-600/85 animate-thinking-wave' : 'text-orange-400/85 animate-thinking-wave'
             : isLight ? 'text-black/30 group-hover/btn:text-black/50' : 'text-white/40 group-hover/btn:text-white/60'
         }`}>
           {summaryText}
         </span>
-        {!anyStreaming && (
-          expanded ? (
-            <ChevronDown className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
-          ) : (
-            <ChevronRight className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
-          )
+        {!anyStreaming && (expanded
+          ? <ChevronDown className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
+          : <ChevronRight className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
         )}
         {toolBlocks.length > 0 && !anyStreaming && (
           <span className={`text-[10px] ml-1 ${isLight ? 'text-black/40' : 'text-white/25'}`}>
@@ -360,15 +314,11 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
         )}
       </button>
 
-      {/* Streaming tool steps - Claude style: minimal steps */}
+      {/* Live steps during streaming */}
       {anyStreaming && (
         <div className="ml-6 mt-1 space-y-1">
           {toolBlocks.map((tool, i) => (
-            <div
-              key={`step-${i}`}
-              className="animate-step-in flex items-center gap-2"
-              style={{ animationDelay: `${i * 100}ms` }}
-            >
+            <div key={`step-${i}`} className="animate-step-in flex items-center gap-2" style={{ animationDelay: `${i * 100}ms` }}>
               {tool.status === 'completed' ? (
                 <CheckIcon className={`h-3 w-3 shrink-0 ${isLight ? 'text-emerald-600/60' : 'text-emerald-400/70'}`} />
               ) : (
@@ -377,6 +327,7 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
                   <div className="absolute inset-0 rounded-full animate-ripple" />
                 </div>
               )}
+              <ToolIcon name={tool.name} className="h-2.5 w-2.5 shrink-0" />
               <span className={`text-[11px] font-medium ${
                 tool.status === 'completed'
                   ? isLight ? 'text-black/45' : 'text-white/30'
@@ -392,7 +343,7 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
         </div>
       )}
 
-      {/* Expanded details - Claude style: thin border, no background */}
+      {/* Expanded details */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -405,14 +356,10 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
             <div className={`ml-6 border-l pl-3 py-2 space-y-1.5 ${isLight ? 'border-black/[0.06]' : 'border-white/[0.06]'}`}>
               {blocks.map((block, index) => {
                 switch (block.type) {
-                  case 'thinking':
-                    return <InlineThinkingContent key={`it-${index}`} block={block} />;
-                  case 'tool_use':
-                    return <ClaudeToolAction key={`tu-${index}`} block={block} />;
-                  case 'tool_result':
-                    return <ClaudeToolResult key={`tr-${index}`} block={block} />;
-                  default:
-                    return null;
+                  case 'thinking': return <InlineThinkingContent key={`it-${index}`} block={block} />;
+                  case 'tool_use': return <ClaudeToolAction key={`tu-${index}`} block={block} />;
+                  case 'tool_result': return <ClaudeToolResult key={`tr-${index}`} block={block} />;
+                  default: return null;
                 }
               })}
             </div>
@@ -423,9 +370,6 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
   );
 }
 
-// ============================================
-// Thinking Indicator
-// ============================================
 function ThinkingIndicator() {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
@@ -440,9 +384,6 @@ function ThinkingIndicator() {
   );
 }
 
-// ============================================
-// Inline Thinking - Minimal, Claude style
-// ============================================
 function InlineThinkingContent({ block }: { block: ThinkingBlock }) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
@@ -450,17 +391,32 @@ function InlineThinkingContent({ block }: { block: ThinkingBlock }) {
     <div className="py-0.5">
       <p className={`text-xs leading-relaxed italic whitespace-pre-wrap break-words ${isLight ? 'text-black/40' : 'text-white/25'}`}>
         {block.content}
-        {block.isStreaming && (
-          <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-orange-400/40 rounded-full align-middle" />
-        )}
+        {block.isStreaming && <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-orange-400/40 rounded-full align-middle" />}
       </p>
     </div>
   );
 }
 
-// ============================================
-// Claude-Style Tool Action - Clean, no background
-// ============================================
+// Contextual icon per tool type
+function ToolIcon({ name, className }: { name: string; className?: string }) {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+  const color = TOOL_DISPLAY[name]?.color || (isLight ? 'text-black/30' : 'text-white/30');
+  const map: Record<string, React.ReactNode> = {
+    Bash: <Terminal className={`${className} ${color}`} />,
+    WebSearch: <Globe className={`${className} ${color}`} />,
+    WebReader: <Globe className={`${className} ${color}`} />,
+    Read: <FileText className={`${className} ${color}`} />,
+    Write: <Edit3 className={`${className} ${color}`} />,
+    Edit: <Edit3 className={`${className} ${color}`} />,
+    Grep: <Search className={`${className} ${color}`} />,
+    Glob: <Search className={`${className} ${color}`} />,
+    LS: <FolderOpen className={`${className} ${color}`} />,
+    Task: <Bot className={`${className} ${color}`} />,
+  };
+  return <>{map[name] || <Zap className={`${className} ${color}`} />}</>;
+}
+
 function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
   const [expanded, setExpanded] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -471,10 +427,7 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
 
   return (
     <div className="py-0.5">
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 text-left group/tool"
-      >
+      <button onClick={() => setExpanded(!expanded)} className="flex w-full items-center gap-2 text-left group/tool">
         {isRunning ? (
           <div className="relative shrink-0">
             <Loader2 className={`h-3 w-3 animate-spin ${isLight ? 'text-orange-600/50' : 'text-orange-400/50'}`} />
@@ -483,6 +436,7 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
         ) : (
           <CheckIcon className={`h-3 w-3 shrink-0 ${isLight ? 'text-emerald-600/50' : 'text-emerald-400/50'}`} />
         )}
+        <ToolIcon name={block.name} className="h-3 w-3 shrink-0" />
         <span className={`text-xs font-medium ${toolDisplay.color} ${isRunning ? 'animate-thinking-wave' : isLight ? 'opacity-70' : 'opacity-50'}`}>
           {toolDisplay.label}
         </span>
@@ -496,22 +450,13 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
       </button>
       <AnimatePresence>
         {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.1 }}
-            className="overflow-hidden"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.1 }} className="overflow-hidden">
             <div className={`mt-1.5 rounded-md border p-2.5 ${isLight ? 'border-black/[0.06] bg-black/[0.015]' : 'border-white/5 bg-white/[0.015]'}`}>
               {inputEntries.map(([key, value]) => (
                 <div key={key} className="flex gap-2 py-0.5">
                   <span className={`text-[11px] shrink-0 font-mono ${isLight ? 'text-black/45' : 'text-white/25'}`}>{key}:</span>
                   <span className={`text-[11px] font-mono break-all line-clamp-3 ${isLight ? 'text-black/60' : 'text-white/40'}`}>
-                    {key === 'content'
-                      ? (typeof value === 'string' ? value.slice(0, 200) + (value.length > 200 ? '...' : '') : JSON.stringify(value).slice(0, 200))
-                      : (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
-                    }
+                    {key === 'content' ? (typeof value === 'string' ? value.slice(0, 200) + (value.length > 200 ? '...' : '') : JSON.stringify(value).slice(0, 200)) : (typeof value === 'string' ? value : JSON.stringify(value, null, 2))}
                   </span>
                 </div>
               ))}
@@ -523,9 +468,6 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
   );
 }
 
-// ============================================
-// Claude-Style Tool Result - Minimal, no code dump
-// ============================================
 function ClaudeToolResult({ block }: { block: ToolResultBlock }) {
   const [expanded, setExpanded] = useState(false);
   const { resolvedTheme } = useTheme();
@@ -540,58 +482,29 @@ function ClaudeToolResult({ block }: { block: ToolResultBlock }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const previewText = block.isError
-    ? 'Error output'
-    : isLong
-      ? `Output (${lines.length} lines)`
-      : lines[0]?.slice(0, 80) + (lines[0]?.length > 80 ? '...' : '');
+  const previewText = block.isError ? 'Error output'
+    : isLong ? `Output (${lines.length} lines)`
+    : lines[0]?.slice(0, 80) + (lines[0]?.length > 80 ? '...' : '');
 
   return (
-    <div className={`rounded-md overflow-hidden ${block.isError
-      ? isLight ? 'border border-red-300/30' : 'border border-red-500/10'
-      : isLight ? 'border border-black/[0.04]' : 'border border-white/[0.04]'
-    }`}>
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className={`flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left transition-colors ${
-          isLight ? 'hover:bg-black/[0.02]' : 'hover:bg-white/[0.02]'
-        }`}
-      >
+    <div className={`rounded-md overflow-hidden ${block.isError ? (isLight ? 'border border-red-300/30' : 'border border-red-500/10') : (isLight ? 'border border-black/[0.04]' : 'border border-white/[0.04]')}`}>
+      <button onClick={() => setExpanded(!expanded)} className={`flex w-full items-center gap-1.5 px-2.5 py-1.5 text-left transition-colors ${isLight ? 'hover:bg-black/[0.02]' : 'hover:bg-white/[0.02]'}`}>
         <ChevronRight className={`h-2.5 w-2.5 transition-transform ${expanded ? 'rotate-90' : ''} ${isLight ? 'text-black/20' : 'text-white/20'}`} />
         <span className={`text-[11px] ${block.isError ? (isLight ? 'text-red-600/50' : 'text-red-400/50') : (isLight ? 'text-black/50' : 'text-white/30')}`}>
           {block.isError ? 'Error' : 'Output'}
         </span>
-        {!expanded && (
-          <span className={`text-[10px] truncate max-w-[200px] ${isLight ? 'text-black/40' : 'text-white/20'}`}>
-            {previewText}
-          </span>
-        )}
-        {isLong && !expanded && (
-          <span className={`text-[10px] ${isLight ? 'text-black/30' : 'text-white/15'}`}>{lines.length} lines</span>
-        )}
+        {!expanded && <span className={`text-[10px] truncate max-w-[200px] ${isLight ? 'text-black/40' : 'text-white/20'}`}>{previewText}</span>}
+        {isLong && !expanded && <span className={`text-[10px] ${isLight ? 'text-black/30' : 'text-white/15'}`}>{lines.length} lines</span>}
         <div className="flex-1" />
-        <button
-          onClick={(e) => { e.stopPropagation(); handleCopy(); }}
-          className={`rounded p-0.5 transition-colors ${isLight ? 'text-black/10 hover:text-black/30' : 'text-white/10 hover:text-white/30'}`}
-        >
+        <button onClick={(e) => { e.stopPropagation(); handleCopy(); }} className={`rounded p-0.5 transition-colors ${isLight ? 'text-black/10 hover:text-black/30' : 'text-white/10 hover:text-white/30'}`}>
           {copied ? <Check className="h-2.5 w-2.5 text-green-500/50" /> : <Copy className="h-2.5 w-2.5" />}
         </button>
       </button>
       <AnimatePresence>
         {expanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.1 }}
-            className="overflow-hidden"
-          >
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.1 }} className="overflow-hidden">
             <div className={`border-t px-2.5 py-2 ${isLight ? 'border-black/[0.04]' : 'border-white/[0.04]'}`}>
-              <pre className={`whitespace-pre-wrap break-words font-mono text-[11px] leading-4 max-h-[300px] overflow-y-auto agent-scrollbar ${
-                block.isError
-                  ? isLight ? 'text-red-600/40' : 'text-red-400/40'
-                  : isLight ? 'text-black/55' : 'text-white/30'
-              }`}>
+              <pre className={`whitespace-pre-wrap break-words font-mono text-[11px] leading-4 max-h-[300px] overflow-y-auto agent-scrollbar ${block.isError ? (isLight ? 'text-red-600/40' : 'text-red-400/40') : (isLight ? 'text-black/55' : 'text-white/30')}`}>
                 {block.content}
               </pre>
             </div>
@@ -602,9 +515,6 @@ function ClaudeToolResult({ block }: { block: ToolResultBlock }) {
   );
 }
 
-// ============================================
-// Text Block
-// ============================================
 function TextBlockComponent({ block }: { block: ContentBlock & { type: 'text' } }) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
@@ -619,25 +529,20 @@ function TextBlockComponent({ block }: { block: ContentBlock & { type: 'text' } 
 function StreamingCursor() {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
-  return (
-    <span className={`ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full align-middle ${isLight ? 'bg-orange-500/70' : 'bg-orange-400/70'}`} />
-  );
+  return <span className={`ml-0.5 inline-block h-4 w-0.5 animate-pulse rounded-full align-middle ${isLight ? 'bg-orange-500/70' : 'bg-orange-400/70'}`} />;
 }
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
-  const seconds = Math.round(ms / 100) / 10;
-  return `${seconds}s`;
+  return `${Math.round(ms / 100) / 10}s`;
 }
 
 function formatToolInputPreview(input: Record<string, unknown>): string {
-  return Object.entries(input)
-    .map(([key, value]) => {
-      if (key === 'content') return '(file content)';
-      const val = typeof value === 'string' ? value : JSON.stringify(value);
-      return val.length > 40 ? val.slice(0, 40) + '...' : val;
-    })
-    .join(' · ');
+  return Object.entries(input).map(([key, value]) => {
+    if (key === 'content') return '(file content)';
+    const val = typeof value === 'string' ? value : JSON.stringify(value);
+    return val.length > 40 ? val.slice(0, 40) + '...' : val;
+  }).join(' · ');
 }
 
 function CheckIcon({ className }: { className?: string }) {
