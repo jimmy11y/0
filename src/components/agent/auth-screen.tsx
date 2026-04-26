@@ -5,8 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight, Lock, ShieldCheck } from 'lucide-react';
 
 // Secure password verification using Web Crypto API
-// Password hash: SHA-256("2099" + "01_11_salt_x7k") computed at build time
-const EXPECTED_HASH = 'b263bcf0051adda629352bb7c36e0f799ab05ec8efc4e3acd235ca1dc9884233';
+// Password hash: SHA-256("2099" + salt) pre-computed
+const EXPECTED_HASH = '7c057a9744d872972f67b9b0288c2b4073ab655da6ec3905ce06db0829d9cee1';
 const SALT = '01_11_salt_x7k';
 
 async function computeHash(data: string): Promise<string> {
