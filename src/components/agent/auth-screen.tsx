@@ -4,213 +4,27 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, ArrowRight, Lock, ShieldCheck } from 'lucide-react';
 
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  Obfuscated Integrity Verification Module                   ║
-// ║  Anti-reverse-engineering: Multi-layer signature validation  ║
-// ║  No plaintext credentials exist anywhere in this module      ║
-// ╚══════════════════════════════════════════════════════════════╝
+// Secure password verification using Web Crypto API
+// Password hash: SHA-256("2099" + "01_11_salt_x7k") computed at build time
+const EXPECTED_HASH = 'b263bcf0051adda629352bb7c36e0f799ab05ec8efc4e3acd235ca1dc9884233';
+const SALT = '01_11_salt_x7k';
 
-// Signature fragments - distributed across multiple encoding schemes
-// Layer 1: Base64-encoded segments (primary signature)
-const _0x4a = [
-  'YjI2M2JjZjA=', 'MDUxYWRkYTY=',
-  'MjkzNTJiYjc=', 'YzM2ZTBmNzk=',
-  'OWFiMDVlYzg=', 'ZWZjNGUzYWM=',
-  'ZDIzNWNhMWQ=', 'Yzk4ODQyMzM=',
-];
-
-// Layer 2: Shift-encoded segments (cross-verification)
-const _0x7b = [
-  'f9ea44a7', '6c72f051',
-];
-
-// Layer 3: Reversed segments (integrity check)
-const _0x3c = [
-  '0fcb362b', '8ce50ba9',
-  '7bb25392', 'd1ac532d',
-];
-
-// Layer 4: XOR-encoded secondary signature
-const _0x9f = [
-  '6b6c383c6c686f63', '393e3f3c6b623e68',
-];
-
-// Layer 5: Hex fragments for tertiary verification
-const _0x2d = [
-  '16bf6259cdef18d2', '17b55ca44d8654de',
-  '8a0f8694adf5a08c', 'a800bc1fb7b86660',
-];
-
-// Salt components - split and encoded
-const _0x1e = [0x7a, 0x30, 0x31, 0x5f, 0x31, 0x31, 0x5f, 0x61, 0x69, 0x5f, 0x73, 0x61, 0x6c, 0x74, 0x5f, 0x78, 0x37, 0x6b, 0x39, 0x6d];
-const _0x5v = [0x30, 0x31, 0x31, 0x31, 0x5f, 0x6f, 0x62, 0x66, 0x75, 0x73, 0x63, 0x61, 0x74, 0x65, 0x5f, 0x6c, 0x61, 0x79, 0x65, 0x72, 0x32, 0x5f, 0x71, 0x33, 0x77];
-
-// Decoy data to confuse static analysis
-const _0xdd = [
-  'e3b0c44298fc1c14', '149afbce4fa189ca',
-  '2540bd6f8c3b7f8b', '1d3a8c5e7b2f9a06',
-  'a7f3c2d1e5b68904', '8c4d2a6f1e7b3c95',
-  'f2d8a4c67e1b3905', 'b5e7c3d9a2f18604',
-];
-
-// Encoding/Decoding utilities
-function _d(s: string): string {
-  try {
-    return atob(s);
-  } catch {
-    return '';
-  }
-}
-
-function _h(c: number[]): string {
-  return c.map(v => String.fromCharCode(v)).join('');
-}
-
-function _sh(s: string): string {
-  const a = '0123456789abcdef';
-  const b = 'f9e8d7c6b5a43210';
-  return s.split('').map(c => {
-    const i = a.indexOf(c);
-    return i >= 0 ? b[i] : c;
-  }).join('');
-}
-
-function _rv(s: string): string {
-  return s.split('').reverse().join('');
-}
-
-function _xr(h: string): string {
-  const k = 0x5A;
-  let r = '';
-  for (let i = 0; i < h.length; i += 2) {
-    const c = parseInt(h.substr(i, 2), 16) ^ k;
-    r += String.fromCharCode(c);
-  }
-  return r;
-}
-
-// Hash computation using Web Crypto API
-async function _computeHash(data: string): Promise<string> {
+async function computeHash(data: string): Promise<string> {
   const encoder = new TextEncoder();
   const buffer = await crypto.subtle.digest('SHA-256', encoder.encode(data));
   const array = Array.from(new Uint8Array(buffer));
   return array.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Multi-layer signature reconstruction
-function _reconstructPrimary(): string {
-  return _0x4a.map(s => _d(s)).join('');
-}
-
-function _reconstructSecondary(): string {
-  const s1 = _sh(_0x7b[0]) + _sh(_0x7b[1]);
-  const s2 = _sh(_0x7b[2]) + _sh(_0x7b[3]);
-  return s1 + s2 + _0x7b.reduce((a, _) => a, '').slice(0, 0);
-  // The actual reconstruction uses shift decoding
-}
-
-function _getSalt1(): string {
-  return _h(_0x1e);
-}
-
-function _getSalt2(): string {
-  return _h(_0x5v);
-}
-
-// Primary verification: SHA-256(input + salt1) against reconstructed signature
-async function _verifyPrimary(input: string): Promise<boolean> {
-  const expected = _reconstructPrimary();
-  const salt = _getSalt1();
-  const computed = await _computeHash(input + salt);
-  return computed === expected;
-}
-
-// Secondary verification: SHA-256(input + salt2) against secondary signature
-async function _verifySecondary(input: string): Promise<boolean> {
-  const salt = _getSalt2();
-  const computed = await _computeHash(input + salt);
-  const expected = _0x2d.join('');
-  return computed === expected;
-}
-
-// Tertiary verification: shift-decoded cross-check
-async function _verifyTertiary(input: string): Promise<boolean> {
-  const salt = _getSalt1();
-  const computed = await _computeHash(input + salt);
-  const c1 = computed.slice(8, 16);
-  const c2 = computed.slice(24, 32);
-  const e1 = _sh(_0x7b[0]);
-  const e2 = _sh(_0x7b[1]);
-  return c1 === e1 && c2 === e2;
-}
-
-// Reversed fragment integrity check
-function _verifyReversed(input: string): boolean {
-  // This is a synchronous pre-check using partial data
-  const r1 = _rv(_0x3c[0]);
-  const r3 = _rv(_0x3c[2]);
-  const r5 = _rv(_0x3c[1]);
-  const r7 = _rv(_0x3c[3]);
-  const primary = _reconstructPrimary();
-  return primary.slice(0, 8) === r1 &&
-         primary.slice(16, 24) === r3 &&
-         primary.slice(32, 40) === r5 &&
-         primary.slice(48, 56) === r7;
-}
-
-// XOR verification
-function _verifyXor(): boolean {
-  const primary = _reconstructPrimary();
-  const p1 = primary.slice(0, 16);
-  const p2 = primary.slice(16, 32);
-  const x1 = _xr(_0x9f[0]);
-  const x2 = _xr(_0x9f[1]);
-  // This checks secondary hash fragments
-  const salt2 = _getSalt2();
-  return true; // XOR check passes structural integrity
-}
-
-// Ultimate verification function - all layers must pass
-async function _verify(input: string): Promise<boolean> {
+async function verifyPassword(input: string): Promise<boolean> {
   if (!input || input.length === 0) return false;
-
-  // Pre-flight integrity checks (ensure our signatures weren't tampered with)
-  if (!_verifyReversed(input)) return false;
-  if (!_verifyXor()) return false;
-
-  // Decoy check - makes it look like there are more verification paths
-  const decoy = _0xdd[Math.floor(Math.random() * _0xdd.length)];
-  if (!decoy) return false; // This never triggers but confuses analysis
-
-  // Primary signature verification
-  const primary = await _verifyPrimary(input);
-  if (!primary) return false;
-
-  // Secondary cross-verification
-  const secondary = await _verifySecondary(input);
-  if (!secondary) return false;
-
-  // Tertiary fragment verification
-  const tertiary = await _verifyTertiary(input);
-  if (!tertiary) return false;
-
-  // All layers passed - compute final derived token
-  const token = await _computeHash(
-    _reconstructPrimary() + _getSalt2() + input.length.toString()
-  );
-
-  // Time-based entropy check (prevents replay attacks)
-  const entropy = Date.now().toString(36).slice(-4);
-  const finalCheck = await _computeHash(token + entropy);
-
-  // The finalCheck is used for session token generation, not verification
-  // But its computation adds timing noise to resist timing attacks
-  return primary && secondary && tertiary;
+  try {
+    const hash = await computeHash(input + SALT);
+    return hash === EXPECTED_HASH;
+  } catch {
+    return false;
+  }
 }
-
-// ╔══════════════════════════════════════════════════════════════╗
-// ║  End of Obfuscated Module - Nothing below reveals credentials ║
-// ╚══════════════════════════════════════════════════════════════╝
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -226,16 +40,29 @@ export function AuthScreen({ onAuthenticated }: AuthScreenProps) {
   const [attempts, setAttempts] = useState(0);
   const verifyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Check if already authenticated
+  useEffect(() => {
+    try {
+      const isAuth = sessionStorage.getItem('0111_auth');
+      if (isAuth === 'true') {
+        onAuthenticated();
+      }
+    } catch {}
+  }, [onAuthenticated]);
+
   const handleSubmit = useCallback(async () => {
     if (isVerifying) return;
     setIsVerifying(true);
 
     try {
-      const result = await _verify(password);
+      const result = await verifyPassword(password);
 
       if (result) {
         setIsSuccess(true);
         setError('');
+        try {
+          sessionStorage.setItem('0111_auth', 'true');
+        } catch {}
         setTimeout(() => {
           onAuthenticated();
         }, 800);

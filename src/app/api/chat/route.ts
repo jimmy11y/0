@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server';
 import Together from 'together-ai';
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
 
 export const runtime = 'nodejs';
 
-const WORKSPACE = '/home/z/my-project/agent-workspace';
+// Use /tmp for Vercel serverless (only writable directory)
+const WORKSPACE = process.env.VERCEL ? '/tmp/agent-workspace' : (process.env.AGENT_WORKSPACE || '/tmp/agent-workspace');
 const TOGETHER_API_KEY = process.env.TOGETHER_API_KEY || 'tgp_v1_XqDbDKys7YGaatpRTVAtLF_3zOW16pK3Eeei-wwn5kw';
 
 const MODEL_MAP: Record<string, string> = {
@@ -26,13 +30,14 @@ const TOOL_NAME_MAP: Record<string, string> = {
   'list_directory': 'LS',
 };
 
-// Ensure workspace exists - using dynamic require to avoid Edge Runtime issues
-try {
-  const fs = require('fs');
-  if (!fs.existsSync(WORKSPACE)) {
-    fs.mkdirSync(WORKSPACE, { recursive: true });
-  }
-} catch {}
+// Ensure workspace exists
+function ensureWorkspace() {
+  try {
+    if (!fs.existsSync(WORKSPACE)) {
+      fs.mkdirSync(WORKSPACE, { recursive: true });
+    }
+  } catch {}
+}
 
 function createSSE(event: string, data: unknown) {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -40,12 +45,111 @@ function createSSE(event: string, data: unknown) {
 
 // Security: resolve path and ensure it's within workspace
 function resolveSecurePath(inputPath: string): string {
-  const path = require('path');
   const resolved = path.resolve(WORKSPACE, inputPath);
   if (!resolved.startsWith(WORKSPACE)) {
     throw new Error('Access denied: path outside workspace');
   }
   return resolved;
+}
+
+// ==========================================
+// Node.js native directory listing (no execSync)
+// ==========================================
+function listDirRecursive(dirPath: string, prefix: string = '', depth: number = 0, maxDepth: number = 3): string {
+  if (depth > maxDepth) return prefix + '... (max depth reached)\n';
+  let result = '';
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith('.') && depth > 0) continue; // skip hidden files in subdirs
+      const icon = entry.isDirectory() ? '📁 ' : '📄 ';
+      result += prefix + icon + entry.name + '\n';
+      if (entry.isDirectory()) {
+        const subPath = path.join(dirPath, entry.name);
+        result += listDirRecursive(subPath, prefix + '  ', depth + 1, maxDepth);
+      }
+    }
+  } catch {
+    result += prefix + '(error reading directory)\n';
+  }
+  return result;
+}
+
+// ==========================================
+// Node.js native file search (no execSync/rg)
+// ==========================================
+function searchInFiles(searchPath: string, pattern: string, maxResults: number = 20): string {
+  const results: string[] = [];
+  const regex = new RegExp(pattern, 'i');
+
+  function searchDir(dirPath: string, depth: number = 0) {
+    if (depth > 5 || results.length >= maxResults) return;
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (results.length >= maxResults) return;
+        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+        const fullPath = path.join(dirPath, entry.name);
+        if (entry.isDirectory()) {
+          searchDir(fullPath, depth + 1);
+        } else if (entry.isFile()) {
+          try {
+            const content = fs.readFileSync(fullPath, 'utf-8');
+            const lines = content.split('\n');
+            for (let i = 0; i < lines.length && results.length < maxResults; i++) {
+              if (regex.test(lines[i])) {
+                const relPath = path.relative(WORKSPACE, fullPath);
+                results.push(`${relPath}:${i + 1}: ${lines[i].trim().slice(0, 200)}`);
+              }
+            }
+          } catch {} // skip binary/unreadable files
+        }
+      }
+    } catch {}
+  }
+
+  searchDir(searchPath);
+  return results.length > 0 ? results.join('\n') : 'No matches found';
+}
+
+// ==========================================
+// Node.js native glob (no execSync/find)
+// ==========================================
+function findFilesByGlob(basePath: string, pattern: string, maxResults: number = 50): string {
+  const results: string[] = [];
+  // Convert simple glob to regex
+  const globRegex = new RegExp(
+    '^' + pattern
+      .replace(/\*\*/g, '<<<GLOBSTAR>>>')
+      .replace(/\*/g, '[^/]*')
+      .replace(/<<<GLOBSTAR>>>/g, '.*')
+      .replace(/\?/g, '[^/]')
+      .replace(/\./g, '\\.')
+    + '$'
+  );
+
+  function walkDir(dirPath: string, depth: number = 0) {
+    if (depth > 8 || results.length >= maxResults) return;
+    try {
+      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (results.length >= maxResults) return;
+        if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+        const fullPath = path.join(dirPath, entry.name);
+        const relPath = path.relative(basePath, fullPath);
+        if (entry.isDirectory()) {
+          walkDir(fullPath, depth + 1);
+        } else if (entry.isFile()) {
+          if (globRegex.test(relPath) || globRegex.test(entry.name)) {
+            results.push(relPath);
+          }
+        }
+      }
+    } catch {}
+  }
+
+  walkDir(basePath);
+  return results.length > 0 ? results.join('\n') : 'No files found matching pattern';
 }
 
 // ==========================================
@@ -144,7 +248,7 @@ const AGENT_TOOLS = [
     type: 'function' as const,
     function: {
       name: 'run_command',
-      description: 'Execute a shell command in the workspace directory. Use for installing packages, building, running servers, etc.',
+      description: 'Execute a shell command in the workspace directory. Use for installing packages, building, running servers, etc. Note: Some commands may not be available in the serverless environment.',
       parameters: {
         type: 'object',
         properties: {
@@ -206,12 +310,11 @@ Rules:
 const CHAT_SYSTEM_PROMPT = `You are a helpful, accurate, and direct AI assistant. Provide clear, complete answers without unnecessary filler. If unsure, say so rather than guessing.`;
 
 // ==========================================
-// Real Tool Execution
+// Real Tool Execution (Vercel-compatible)
 // ==========================================
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
-  const fs = require('fs');
-  const path = require('path');
-  const { execSync } = require('child_process');
+  // Ensure workspace exists before any operation
+  ensureWorkspace();
 
   try {
     switch (name) {
@@ -252,43 +355,46 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
       }
 
       case 'list_directory': {
-        const dirPath = resolveSecurePath((args.path as string) || '.');
+        const inputPath = (args.path as string) || '.';
+        const dirPath = resolveSecurePath(inputPath);
         if (!fs.existsSync(dirPath)) {
-          return `Error: Directory not found: ${args.path || '.'}`;
+          // If the directory doesn't exist, return workspace listing instead
+          if (inputPath === '.' || inputPath === '') {
+            return 'Workspace is empty. No files have been created yet.';
+          }
+          return `Error: Directory not found: ${inputPath}. The workspace may be empty.`;
+        }
+        const stat = fs.statSync(dirPath);
+        if (!stat.isDirectory()) {
+          return `Error: Path is not a directory: ${inputPath}`;
         }
         const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-        const listing = entries.map((e: any) => {
+        if (entries.length === 0) {
+          return '(empty directory)';
+        }
+        const listing = entries.map((e) => {
           const prefix = e.isDirectory() ? '📁 ' : '📄 ';
           return prefix + e.name;
         }).join('\n');
-        return listing || '(empty directory)';
+        return listing;
       }
 
       case 'search_code': {
-        const searchPath = resolveSecurePath((args.path as string) || '.');
+        const inputPath = (args.path as string) || '.';
+        const searchPath = resolveSecurePath(inputPath);
         const pattern = (args.pattern as string) || '';
-        try {
-          const result = execSync(
-            `cd "${searchPath}" && rg --max-count=20 --no-heading "${pattern.replace(/"/g, '\\"')}" . 2>/dev/null || echo "No matches found"`,
-            { encoding: 'utf-8', timeout: 10000, maxBuffer: 50 * 1024 }
-          );
-          return result.slice(0, 5000) || 'No matches found';
-        } catch {
-          return 'No matches found';
+        if (!fs.existsSync(searchPath)) {
+          return 'No matches found (workspace may be empty)';
         }
+        return searchInFiles(searchPath, pattern);
       }
 
       case 'find_files': {
         const pattern = (args.pattern as string) || '**/*';
-        try {
-          const result = execSync(
-            `cd "${WORKSPACE}" && find . -name "${pattern.replace(/"/g, '\\"')}" -type f 2>/dev/null | head -50`,
-            { encoding: 'utf-8', timeout: 10000, maxBuffer: 50 * 1024 }
-          );
-          return result || 'No files found';
-        } catch {
-          return 'No files found';
+        if (!fs.existsSync(WORKSPACE)) {
+          return 'No files found (workspace is empty)';
         }
+        return findFilesByGlob(WORKSPACE, pattern);
       }
 
       case 'run_command': {
@@ -299,11 +405,16 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
             timeout: 30000,
             maxBuffer: 100 * 1024,
             cwd: WORKSPACE,
+            shell: '/bin/sh',
           });
           return result || '(command completed with no output)';
         } catch (error: any) {
           const stdout = error.stdout || '';
           const stderr = error.stderr || '';
+          // Check if the error is because the command doesn't exist
+          if (stderr.includes('command not found') || stderr.includes('not recognized')) {
+            return `Error: Command not available in this environment: ${command.split(' ')[0]}\nTry using alternative approaches with the available file tools.`;
+          }
           return `Command exited with code ${error.status || 'unknown'}\nStdout: ${stdout.slice(0, 3000)}\nStderr: ${stderr.slice(0, 3000)}`;
         }
       }
@@ -407,7 +518,6 @@ async function runAgentLoop(
       // If no tool calls, we're done - stream the final text
       if (!message.tool_calls || message.tool_calls.length === 0) {
         if (message.content) {
-          // Simulate streaming for better UX
           const content = message.content;
           const chunks = content.split(/(\s+)/);
           for (const chunk of chunks) {
@@ -415,7 +525,7 @@ async function runAgentLoop(
             await new Promise(r => setTimeout(r, 8));
           }
         }
-        return; // Agent loop complete
+        return;
       }
 
       // Add assistant message with tool calls to conversation
@@ -502,11 +612,11 @@ async function runAgentLoop(
       } else {
         send('error', { content: errorMsg });
       }
-      return; // Exit agent loop on error
+      return;
     }
   }
 
-  // If we hit max iterations, send a completion message
+  // If we hit max iterations
   send('text_delta', { content: '\n\n*Task completed. Maximum iteration limit reached.*' });
 }
 
