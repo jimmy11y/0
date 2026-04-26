@@ -44,7 +44,7 @@ export function ChatInterface() {
 
         {/* Stop generation button */}
         {isLoading && (
-          <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 z-40">
+          <div className="absolute bottom-[76px] sm:bottom-24 left-1/2 -translate-x-1/2 z-40">
             <button
               onClick={stopGeneration}
               className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs text-white/50 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white/70"

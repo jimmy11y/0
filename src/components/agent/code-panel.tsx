@@ -248,9 +248,9 @@ export function CodePanel() {
   } = useAgentStore();
 
   const [copied, setCopied] = useState(false);
-  const [showExplorer, setShowExplorer] = useState(typeof window !== 'undefined' && window.innerWidth >= 768);
-  const [showTerminal, setShowTerminal] = useState(true);
-  const [panelWidth, setPanelWidth] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? 320 : 600);
+  const [showExplorer, setShowExplorer] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? window.innerWidth : 600);
   const [isMaximized, setIsMaximized] = useState(false);
   const isDragging = useRef(false);
 
@@ -271,13 +271,14 @@ export function CodePanel() {
   // Adjust panel width on resize
   useEffect(() => {
     const onResize = () => {
-      if (window.innerWidth < 768 && panelWidth > 320) {
-        setPanelWidth(320);
+      if (window.innerWidth < 768) {
+        setPanelWidth(window.innerWidth);
+        setShowExplorer(false);
       }
     };
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [panelWidth]);
+  }, []);
 
   // Resize drag
   useEffect(() => {
@@ -306,8 +307,8 @@ export function CodePanel() {
 
   return (
     <div
-      className={`flex h-full shrink-0 border-l border-white/[0.08] bg-[#1e1e1e] ${isMaximized ? '' : ''} ${typeof window !== 'undefined' && window.innerWidth < 768 && !isMaximized ? 'fixed inset-0 z-50 border-l-0' : ''}`}
-      style={{ width: isMaximized ? '100%' : `${panelWidth}px` }}
+      className={`flex h-full shrink-0 border-l border-white/[0.08] bg-[#1e1e1e] ${typeof window !== 'undefined' && window.innerWidth < 768 ? 'fixed inset-0 z-50 border-l-0' : ''}`}
+      style={{ width: isMaximized ? '100%' : typeof window !== 'undefined' && window.innerWidth < 768 ? '100%' : `${panelWidth}px` }}
     >
       {/* ── Resize Handle ── */}
       {!isMaximized && (
@@ -386,7 +387,7 @@ export function CodePanel() {
         <div className="flex flex-1 overflow-hidden">
           {/* ── File Explorer Sidebar ── */}
           {showExplorer && codePanelFiles.length > 0 && (
-            <div className="w-48 shrink-0 border-r border-white/[0.06] bg-[#252526] overflow-y-auto code-panel-scrollbar">
+            <div className="w-32 sm:w-48 shrink-0 border-r border-white/[0.06] bg-[#252526] overflow-y-auto code-panel-scrollbar">
               <div className="px-3 py-2 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
                 Explorer
               </div>

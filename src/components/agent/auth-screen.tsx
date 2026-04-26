@@ -21,8 +21,7 @@ const _0x4a = [
 
 // Layer 2: Shift-encoded segments (cross-verification)
 const _0x7b = [
-  'f79a22ac', '38c1f065',
-  '103d18a3', '35bbde88',
+  'f9ea44a7', '6c72f051',
 ];
 
 // Layer 3: Reversed segments (integrity check)
@@ -134,14 +133,14 @@ async function _verifySecondary(input: string): Promise<boolean> {
   return computed === expected;
 }
 
-// Tertiary verification: XOR-decoded cross-check
+// Tertiary verification: shift-decoded cross-check
 async function _verifyTertiary(input: string): Promise<boolean> {
   const salt = _getSalt1();
   const computed = await _computeHash(input + salt);
   const c1 = computed.slice(8, 16);
   const c2 = computed.slice(24, 32);
-  const e1 = _sh(_0x7b[0]) + _sh(_0x7b[1]);
-  const e2 = _sh(_0x7b[2]) + _sh(_0x7b[3]);
+  const e1 = _sh(_0x7b[0]);
+  const e2 = _sh(_0x7b[1]);
   return c1 === e1 && c2 === e2;
 }
 

@@ -34,8 +34,11 @@ export function ChatInput({ onSend }: { onSend: (message: string, files?: Attach
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
+      // On mobile, Enter should add new line; only submit on desktop
+      if (window.innerWidth >= 768) {
+        e.preventDefault();
+        handleSubmit();
+      }
     }
   };
 
@@ -90,7 +93,7 @@ export function ChatInput({ onSend }: { onSend: (message: string, files?: Attach
   };
 
   return (
-    <div className="border-t border-white/5 px-2 sm:px-4 pb-3 sm:pb-4 pt-2 sm:pt-3 safe-bottom" style={{ backgroundColor: 'hsl(60, 2.7%, 14.5%)' }}>
+    <div className="border-t border-white/5 px-2 sm:px-4 pb-2 sm:pb-4 pt-2 sm:pt-3 safe-bottom" style={{ backgroundColor: 'hsl(60, 2.7%, 14.5%)' }}>
       <div className="mx-auto max-w-3xl">
         <div className="rounded-2xl border border-white/10 shadow-lg transition-shadow focus-within:border-white/20 focus-within:shadow-xl" style={{ backgroundColor: 'hsl(30, 3.3%, 11.8%)' }}>
           {/* Model selector row + Agent toggle */}
@@ -112,11 +115,11 @@ export function ChatInput({ onSend }: { onSend: (message: string, files?: Attach
 
           {/* Attached files preview */}
           {attachedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 border-b border-white/5 px-3 py-2">
+            <div className="flex flex-wrap gap-2 border-b border-white/5 px-2 sm:px-3 py-2">
               {attachedFiles.map((file) => (
                 <div
                   key={file.id}
-                  className="group flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5"
+                  className="group flex items-center gap-1.5 sm:gap-2 rounded-lg border border-white/10 bg-white/5 px-2 sm:px-2.5 py-1.5"
                 >
                   {file.type.startsWith('image/') ? (
                     <div className="relative h-8 w-8 overflow-hidden rounded">
@@ -127,8 +130,8 @@ export function ChatInput({ onSend }: { onSend: (message: string, files?: Attach
                   ) : (
                     <FileText className="h-4 w-4 text-white/30" />
                   )}
-                  <span className="max-w-[120px] truncate text-[11px] text-white/60">{file.name}</span>
-                  <span className="text-[10px] text-white/25">{formatFileSize(file.size)}</span>
+                  <span className="max-w-[80px] sm:max-w-[120px] truncate text-[11px] text-white/60">{file.name}</span>
+                  <span className="text-[10px] text-white/25 hidden sm:inline">{formatFileSize(file.size)}</span>
                   <button
                     onClick={() => removeFile(file.id)}
                     className="rounded p-0.5 text-white/20 transition-colors hover:bg-white/10 hover:text-white/60"
@@ -179,7 +182,7 @@ export function ChatInput({ onSend }: { onSend: (message: string, files?: Attach
             </button>
           </div>
         </div>
-        <p className="mt-1.5 sm:mt-2 text-center text-[10px] sm:text-xs text-white/25">
+        <p className="mt-1 sm:mt-2 text-center text-[10px] sm:text-xs text-white/25">
           01 11 AI can make mistakes. Consider checking important information.
         </p>
       </div>

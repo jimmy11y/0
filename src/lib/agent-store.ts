@@ -72,8 +72,8 @@ interface AgentState {
 }
 
 export const useAgentStore = create<AgentState>((set) => ({
-  // Sidebar
-  sidebarOpen: true,
+  // Sidebar - closed by default on mobile, open on desktop
+  sidebarOpen: typeof window !== 'undefined' && window.innerWidth >= 768,
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 

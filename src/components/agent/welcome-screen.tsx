@@ -2,7 +2,7 @@
 
 export function WelcomeScreen({ onSelectPrompt }: { onSelectPrompt: (prompt: string) => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+    <div className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-6 sm:py-12">
       {/* 01 11 AI logo */}
       <div className="mb-4 sm:mb-6 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-amber-600">
         <span className="text-sm sm:text-base font-bold text-white">01</span>

@@ -22,9 +22,9 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.25 }}
-        className="group flex justify-end px-4 py-3"
+        className="group flex justify-end px-2 sm:px-4 py-2 sm:py-3"
       >
-        <div className="max-w-[80%]">
+        <div className="max-w-[85%] sm:max-w-[80%]">
           <div className="rounded-2xl rounded-tr-sm bg-white/[0.07] px-4 py-2.5">
             {renderUserContent(message.content)}
           </div>
@@ -46,7 +46,7 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="group px-4 py-4"
+      className="group px-2 sm:px-4 py-3 sm:py-4"
     >
       <div className="min-w-0">
         {message.model && !isUser && (
@@ -245,7 +245,7 @@ function ThinkingGroupBlock({ blocks, isStreaming }: { blocks: ContentBlock[]; i
               }`}>
                 {TOOL_DISPLAY[tool.name]?.label || tool.name}
               </span>
-              <span className="truncate text-[10px] text-white/15 font-mono max-w-[200px]">
+              <span className="truncate text-[10px] text-white/15 font-mono max-w-[120px] sm:max-w-[200px]">
                 {formatToolInputPreview(tool.input)}
               </span>
             </div>

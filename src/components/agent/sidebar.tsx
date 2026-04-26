@@ -27,6 +27,7 @@ export function Sidebar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm md:hidden"
             onClick={toggleSidebar}
           />
@@ -148,19 +149,17 @@ export function Sidebar() {
                       <MessageSquare className="h-4 w-4 shrink-0 text-white/40" />
                       <span className="truncate flex-1">{session.title}</span>
                     </button>
-                    {/* Delete button - appears on hover (desktop) or always visible (mobile) */}
-                    {(hoveredSession === session.id || 'ontouchstart' in window) && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteChatSession(session.id);
-                        }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/30 transition-colors hover:bg-red-500/20 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100"
-                        title="Delete chat"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
+                    {/* Delete button - visible on touch or hover */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteChatSession(session.id);
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-white/30 transition-colors hover:bg-red-500/20 hover:text-red-400 md:opacity-0 md:group-hover:opacity-100"
+                      title="Delete chat"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>

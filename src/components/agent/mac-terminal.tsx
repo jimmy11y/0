@@ -24,7 +24,7 @@ export function MacTerminal() {
   if (!terminalOpen) return null;
 
   return (
-    <div className="absolute bottom-16 sm:bottom-20 left-2 right-2 sm:left-4 sm:right-4 z-50 md:left-auto md:right-4 md:w-[680px]">
+    <div className="absolute bottom-[68px] sm:bottom-20 left-1 right-1 sm:left-4 sm:right-4 z-50 md:left-auto md:right-4 md:w-[680px]">
       <div
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
@@ -32,7 +32,7 @@ export function MacTerminal() {
         style={{ backgroundColor: '#1a1a1a' }}
       >
         {/* Title bar - Mac style */}
-        <div className="flex items-center border-b border-white/[0.06] px-3 py-2 select-none">
+        <div className="flex items-center border-b border-white/[0.06] px-2 sm:px-3 py-2 select-none">
           {/* Traffic lights */}
           <div className="flex items-center gap-1.5">
             <button
@@ -81,7 +81,7 @@ export function MacTerminal() {
 
         {/* Terminal content - collapsible when minimized */}
         {!isMinimized && (
-          <div className="h-64 overflow-y-auto terminal-scrollbar p-3 font-mono text-xs leading-5">
+          <div className="h-48 sm:h-64 overflow-y-auto terminal-scrollbar p-2 sm:p-3 font-mono text-xs leading-5">
             {terminalContent.length === 0 ? (
               <div className="flex items-center gap-2 text-white/15">
                 <span className="text-emerald-400/40">$</span>
