@@ -5,7 +5,10 @@ import { Brain, ChevronDown, ChevronRight, Loader2, Copy, Check } from 'lucide-r
 import { MessageActions } from './message-actions';
 import type { ChatMessage, ContentBlock, ToolUseBlock, ToolResultBlock, ThinkingBlock } from '@/types/agent';
 import { TOOL_DISPLAY, MODEL_CONFIG } from '@/types/agent';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface MessageItemProps {
   message: ChatMessage;
@@ -26,7 +29,9 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
       >
         <div className="max-w-[85%] sm:max-w-[80%]">
           <div className="rounded-2xl rounded-tr-sm bg-white/[0.07] px-4 py-2.5">
-            {renderUserContent(message.content)}
+            <p className="text-sm leading-relaxed text-white/90 whitespace-pre-wrap break-words">
+              {message.content}
+            </p>
           </div>
           <div className="mt-1.5 flex justify-end">
             <MessageActions
@@ -62,8 +67,91 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
         )}
 
         {(!message.blocks || message.blocks.length === 0) && message.content && (
-          <div className="text-sm leading-relaxed text-white/85 whitespace-pre-wrap break-words">
-            {message.content}
+          <div className="agent-markdown text-sm leading-relaxed text-white/85">
+            <ReactMarkdown
+              components={{
+                code({ className, children, ...props }) {
+                  const match = /language-(\w+)/.exec(className || '');
+                  const codeString = String(children).replace(/\n$/, '');
+                  const isInline = !match && !codeString.includes('\n');
+
+                  if (isInline) {
+                    return (
+                      <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-orange-300/80 font-mono" {...props}>
+                        {children}
+                      </code>
+                    );
+                  }
+
+                  return (
+                    <div className="my-3 rounded-lg overflow-hidden border border-white/10">
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-[#282c34] border-b border-white/5">
+                        <span className="text-[10px] text-white/40 font-mono">{match?.[1] || 'code'}</span>
+                        <CopyButton text={codeString} />
+                      </div>
+                      <SyntaxHighlighter
+                        style={oneDark}
+                        language={match?.[1] || 'text'}
+                        PreTag="div"
+                        customStyle={{
+                          margin: 0,
+                          borderRadius: 0,
+                          fontSize: '12px',
+                          background: '#1e1e2e',
+                          padding: '12px',
+                        }}
+                      >
+                        {codeString}
+                      </SyntaxHighlighter>
+                    </div>
+                  );
+                },
+                p({ children }) {
+                  return <p className="mb-2 last:mb-0 leading-7">{children}</p>;
+                },
+                h1({ children }) {
+                  return <h1 className="text-xl font-bold text-white/90 mt-4 mb-2">{children}</h1>;
+                },
+                h2({ children }) {
+                  return <h2 className="text-lg font-semibold text-white/90 mt-4 mb-1.5">{children}</h2>;
+                },
+                h3({ children }) {
+                  return <h3 className="text-base font-semibold text-white/90 mt-3 mb-1">{children}</h3>;
+                },
+                ul({ children }) {
+                  return <ul className="my-1.5 ml-4 space-y-1 list-disc list-outside">{children}</ul>;
+                },
+                ol({ children }) {
+                  return <ol className="my-1.5 ml-4 space-y-1 list-decimal list-outside">{children}</ol>;
+                },
+                li({ children }) {
+                  return <li className="text-white/80 leading-6">{children}</li>;
+                },
+                strong({ children }) {
+                  return <strong className="font-semibold text-white/95">{children}</strong>;
+                },
+                a({ href, children }) {
+                  return <a href={href} className="text-orange-400/80 underline underline-offset-2 hover:text-orange-400" target="_blank" rel="noopener">{children}</a>;
+                },
+                blockquote({ children }) {
+                  return <blockquote className="border-l-2 border-orange-400/30 pl-3 my-2 text-white/60 italic">{children}</blockquote>;
+                },
+                table({ children }) {
+                  return <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>;
+                },
+                th({ children }) {
+                  return <th className="border border-white/10 px-2 py-1 bg-white/5 text-left text-white/70">{children}</th>;
+                },
+                td({ children }) {
+                  return <td className="border border-white/10 px-2 py-1 text-white/60">{children}</td>;
+                },
+                hr() {
+                  return <hr className="border-white/10 my-4" />;
+                },
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
             {message.isStreaming && <StreamingCursor />}
           </div>
         )}
@@ -94,14 +182,6 @@ export function MessageItem({ message, onRetry, onEdit }: MessageItemProps) {
         )}
       </div>
     </motion.div>
-  );
-}
-
-function renderUserContent(content: string) {
-  return (
-    <p className="text-sm leading-relaxed text-white/90 whitespace-pre-wrap break-words">
-      {content}
-    </p>
   );
 }
 
@@ -189,7 +269,6 @@ function ThinkingGroupBlock({ blocks, isStreaming }: { blocks: ContentBlock[]; i
 
   return (
     <div className="relative">
-      {/* Header - brain icon with pulse wave animation */}
       <button
         onClick={() => !anyStreaming && setExpanded(!expanded)}
         className={`flex items-center gap-2.5 py-1.5 text-left transition-colors ${
@@ -223,7 +302,6 @@ function ThinkingGroupBlock({ blocks, isStreaming }: { blocks: ContentBlock[]; i
         )}
       </button>
 
-      {/* Live Task Steps - with wave pulse animation */}
       {anyStreaming && (
         <div className="ml-7 mt-1 space-y-1.5">
           {toolBlocks.map((tool, i) => (
@@ -253,7 +331,6 @@ function ThinkingGroupBlock({ blocks, isStreaming }: { blocks: ContentBlock[]; i
         </div>
       )}
 
-      {/* Expandable detail content */}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -362,8 +439,11 @@ function InlineToolAction({ block }: { block: ToolUseBlock }) {
               {inputEntries.map(([key, value]) => (
                 <div key={key} className="flex gap-2 py-0.5">
                   <span className="text-[11px] text-white/20 shrink-0 font-mono">{key}:</span>
-                  <span className="text-[11px] text-white/35 font-mono break-all">
-                    {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+                  <span className="text-[11px] text-white/35 font-mono break-all line-clamp-3">
+                    {key === 'content'
+                      ? (typeof value === 'string' ? value.slice(0, 200) + (value.length > 200 ? '...' : '') : JSON.stringify(value).slice(0, 200))
+                      : (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
+                    }
                   </span>
                 </div>
               ))}
@@ -430,12 +510,95 @@ function InlineToolOutput({ block }: { block: ToolResultBlock }) {
 }
 
 // ============================================
-// Text Block
+// Text Block - Using ReactMarkdown with Syntax Highlighting
 // ============================================
 function TextBlockComponent({ block }: { block: ContentBlock & { type: 'text' } }) {
   return (
-    <div className="text-sm leading-relaxed text-white/85 prose prose-invert prose-sm max-w-none">
-      {renderMarkdown(block.content)}
+    <div className="agent-markdown text-sm leading-relaxed text-white/85">
+      <ReactMarkdown
+        components={{
+          code({ className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || '');
+            const codeString = String(children).replace(/\n$/, '');
+            const isInline = !match && !codeString.includes('\n');
+
+            if (isInline) {
+              return (
+                <code className="rounded bg-white/10 px-1.5 py-0.5 text-xs text-orange-300/80 font-mono" {...props}>
+                  {children}
+                </code>
+              );
+            }
+
+            return (
+              <div className="my-3 rounded-lg overflow-hidden border border-white/10">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-[#282c34] border-b border-white/5">
+                  <span className="text-[10px] text-white/40 font-mono">{match?.[1] || 'code'}</span>
+                  <CopyButton text={codeString} />
+                </div>
+                <SyntaxHighlighter
+                  style={oneDark}
+                  language={match?.[1] || 'text'}
+                  PreTag="div"
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: 0,
+                    fontSize: '12px',
+                    background: '#1e1e2e',
+                    padding: '12px',
+                  }}
+                >
+                  {codeString}
+                </SyntaxHighlighter>
+              </div>
+            );
+          },
+          p({ children }) {
+            return <p className="mb-2 last:mb-0 leading-7">{children}</p>;
+          },
+          h1({ children }) {
+            return <h1 className="text-xl font-bold text-white/90 mt-4 mb-2">{children}</h1>;
+          },
+          h2({ children }) {
+            return <h2 className="text-lg font-semibold text-white/90 mt-4 mb-1.5">{children}</h2>;
+          },
+          h3({ children }) {
+            return <h3 className="text-base font-semibold text-white/90 mt-3 mb-1">{children}</h3>;
+          },
+          ul({ children }) {
+            return <ul className="my-1.5 ml-4 space-y-1 list-disc list-outside">{children}</ul>;
+          },
+          ol({ children }) {
+            return <ol className="my-1.5 ml-4 space-y-1 list-decimal list-outside">{children}</ol>;
+          },
+          li({ children }) {
+            return <li className="text-white/80 leading-6">{children}</li>;
+          },
+          strong({ children }) {
+            return <strong className="font-semibold text-white/95">{children}</strong>;
+          },
+          a({ href, children }) {
+            return <a href={href} className="text-orange-400/80 underline underline-offset-2 hover:text-orange-400" target="_blank" rel="noopener">{children}</a>;
+          },
+          blockquote({ children }) {
+            return <blockquote className="border-l-2 border-orange-400/30 pl-3 my-2 text-white/60 italic">{children}</blockquote>;
+          },
+          table({ children }) {
+            return <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>;
+          },
+          th({ children }) {
+            return <th className="border border-white/10 px-2 py-1 bg-white/5 text-left text-white/70">{children}</th>;
+          },
+          td({ children }) {
+            return <td className="border border-white/10 px-2 py-1 text-white/60">{children}</td>;
+          },
+          hr() {
+            return <hr className="border-white/10 my-4" />;
+          },
+        }}
+      >
+        {block.content}
+      </ReactMarkdown>
       {block.isStreaming && <StreamingCursor />}
     </div>
   );
@@ -445,102 +608,6 @@ function StreamingCursor() {
   return (
     <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-orange-400/70 rounded-full align-middle" />
   );
-}
-
-function renderMarkdown(text: string) {
-  const parts = text.split(/(```[\s\S]*?```)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('```') && part.endsWith('```')) {
-      const content = part.slice(3, -3);
-      const firstNewline = content.indexOf('\n');
-      const lang = firstNewline > 0 ? content.slice(0, firstNewline).trim() : '';
-      const code = firstNewline > 0 ? content.slice(firstNewline + 1) : content;
-      return (
-        <div key={i} className="my-2.5 rounded-lg border border-white/10 bg-black/40 overflow-hidden">
-          {lang && (
-            <div className="flex items-center justify-between border-b border-white/5 px-3 py-1.5">
-              <span className="text-[10px] text-white/30 font-mono">{lang}</span>
-              <CopyButton text={code} />
-            </div>
-          )}
-          <pre className="p-3 overflow-x-auto">
-            <code className="text-xs text-white/60 font-mono whitespace-pre">{code}</code>
-          </pre>
-        </div>
-      );
-    }
-    return <span key={i}>{renderInlineMarkdown(part)}</span>;
-  });
-}
-
-function renderInlineMarkdown(text: string) {
-  const lines = text.split('\n');
-  return lines.map((line, li) => {
-    const elements: React.ReactNode[] = [];
-    if (line.startsWith('### ')) {
-      elements.push(<h3 key={`h3-${li}`} className="text-base font-semibold text-white/90 mt-3 mb-1">{processInline(line.slice(4))}</h3>);
-    } else if (line.startsWith('## ')) {
-      elements.push(<h2 key={`h2-${li}`} className="text-lg font-semibold text-white/90 mt-4 mb-1.5">{processInline(line.slice(3))}</h2>);
-    } else if (line.startsWith('# ')) {
-      elements.push(<h1 key={`h1-${li}`} className="text-xl font-bold text-white/90 mt-4 mb-2">{processInline(line.slice(2))}</h1>);
-    } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      elements.push(
-        <div key={`li-${li}`} className="flex gap-2 my-0.5">
-          <span className="text-white/30 mt-0.5">•</span>
-          <span className="flex-1">{processInline(line.slice(2))}</span>
-        </div>
-      );
-    } else if (/^\d+\.\s/.test(line)) {
-      const match = line.match(/^(\d+)\.\s(.*)$/);
-      if (match) {
-        elements.push(
-          <div key={`oli-${li}`} className="flex gap-2 my-0.5">
-            <span className="text-white/30 text-xs mt-0.5">{match[1]}.</span>
-            <span className="flex-1">{processInline(match[2])}</span>
-          </div>
-        );
-      }
-    } else if (line.trim() === '') {
-      elements.push(<div key={`br-${li}`} className="h-2" />);
-    } else {
-      elements.push(<span key={`p-${li}`}>{processInline(line)}</span>);
-    }
-    return (
-      <span key={`line-${li}`}>
-        {elements}
-        {li < lines.length - 1 && <br />}
-      </span>
-    );
-  });
-}
-
-function processInline(text: string): React.ReactNode[] {
-  const result: React.ReactNode[] = [];
-  const regex = /(\*\*[^*]+\*\*)|(`[^`]+`)|(\[[^\]]+\]\([^)]+\))/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  let key = 0;
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      result.push(text.slice(lastIndex, match.index));
-    }
-    const m = match[0];
-    if (m.startsWith('**') && m.endsWith('**')) {
-      result.push(<strong key={key++} className="font-semibold text-white/90">{m.slice(2, -2)}</strong>);
-    } else if (m.startsWith('`') && m.endsWith('`')) {
-      result.push(<code key={key++} className="rounded bg-white/10 px-1 py-0.5 text-xs text-orange-300/70 font-mono">{m.slice(1, -1)}</code>);
-    } else if (m.startsWith('[')) {
-      const linkMatch = m.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
-      if (linkMatch) {
-        result.push(<a key={key++} href={linkMatch[2]} className="text-orange-400/70 underline underline-offset-2 hover:text-orange-400">{linkMatch[1]}</a>);
-      }
-    }
-    lastIndex = match.index + m.length;
-  }
-  if (lastIndex < text.length) {
-    result.push(text.slice(lastIndex));
-  }
-  return result;
 }
 
 function CopyButton({ text }: { text: string }) {
