@@ -8,6 +8,7 @@ import type { ChatMessage, ContentBlock, ToolUseBlock, ToolResultBlock, Thinking
 import { TOOL_DISPLAY, MODEL_CONFIG } from '@/types/agent';
 import { useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -113,13 +114,22 @@ function MarkdownRenderer({ content }: { content: string }) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === 'light';
 
+  // Complete any open code fences during streaming to prevent raw text
+  const processedContent = content.replace(/```([\w]*)\n([\s\S]*?)(?=```|$)/g, (match, lang, code) => {
+    if (!match.endsWith('```')) return match + '```';
+    return match;
+  });
+
   return (
     <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
       components={{
         code({ className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || '');
           const codeString = String(children).replace(/\n$/, '');
-          const isInline = !match && !codeString.includes('\n');
+          // A code element is inline ONLY if it has no language class AND no newlines
+          // If it has a className (from fenced block) or contains newlines → block
+          const isInline = !className && !codeString.includes('\n');
 
           if (isInline) {
             return (
@@ -177,7 +187,7 @@ function MarkdownRenderer({ content }: { content: string }) {
         },
       }}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   );
 }
@@ -329,20 +339,22 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
         )}
         <span className={`text-xs font-medium transition-colors ${
           anyStreaming
-            ? isLight ? 'text-orange-600/70' : 'text-orange-400/70'
+            ? isLight
+              ? 'text-orange-600/85 animate-thinking-wave'
+              : 'text-orange-400/85 animate-thinking-wave'
             : isLight ? 'text-black/30 group-hover/btn:text-black/50' : 'text-white/40 group-hover/btn:text-white/60'
         }`}>
           {summaryText}
         </span>
         {!anyStreaming && (
           expanded ? (
-            <ChevronDown className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/20' : 'text-white/25'}`} />
+            <ChevronDown className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
           ) : (
-            <ChevronRight className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/20' : 'text-white/25'}`} />
+            <ChevronRight className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/35' : 'text-white/25'}`} />
           )
         )}
         {toolBlocks.length > 0 && !anyStreaming && (
-          <span className={`text-[10px] ml-1 ${isLight ? 'text-black/15' : 'text-white/20'}`}>
+          <span className={`text-[10px] ml-1 ${isLight ? 'text-black/40' : 'text-white/25'}`}>
             {completedTools.length}/{toolBlocks.length} tools
           </span>
         )}
@@ -367,12 +379,12 @@ function ClaudeThinkingGroup({ blocks, isStreaming }: { blocks: ContentBlock[]; 
               )}
               <span className={`text-[11px] font-medium ${
                 tool.status === 'completed'
-                  ? isLight ? 'text-black/20' : 'text-white/25'
-                  : isLight ? 'text-orange-600/70 animate-pulse-wave' : 'text-orange-400/70 animate-pulse-wave'
+                  ? isLight ? 'text-black/45' : 'text-white/30'
+                  : isLight ? 'text-orange-600/85 animate-thinking-wave' : 'text-orange-400/75 animate-thinking-wave'
               }`}>
                 {TOOL_DISPLAY[tool.name]?.label || tool.name}
               </span>
-              <span className={`truncate text-[10px] font-mono max-w-[120px] sm:max-w-[200px] ${isLight ? 'text-black/15' : 'text-white/15'}`}>
+              <span className={`truncate text-[10px] font-mono max-w-[120px] sm:max-w-[200px] ${isLight ? 'text-black/35' : 'text-white/20'}`}>
                 {formatToolInputPreview(tool.input)}
               </span>
             </div>
@@ -423,7 +435,7 @@ function ThinkingIndicator() {
         <Brain className={`h-4 w-4 ${isLight ? 'text-orange-500' : 'text-orange-400'} animate-brain-pulse`} />
         <div className="absolute inset-0 rounded-full animate-ripple" />
       </div>
-      <span className={`text-xs font-medium ${isLight ? 'text-orange-600/70' : 'text-orange-400/70'} animate-pulse-wave`}>Thinking...</span>
+      <span className={`text-xs font-medium ${isLight ? 'text-orange-600/85' : 'text-orange-400/85'} animate-thinking-wave`}>Thinking...</span>
     </div>
   );
 }
@@ -436,7 +448,7 @@ function InlineThinkingContent({ block }: { block: ThinkingBlock }) {
   const isLight = resolvedTheme === 'light';
   return (
     <div className="py-0.5">
-      <p className={`text-xs leading-relaxed italic whitespace-pre-wrap break-words ${isLight ? 'text-black/20' : 'text-white/20'}`}>
+      <p className={`text-xs leading-relaxed italic whitespace-pre-wrap break-words ${isLight ? 'text-black/40' : 'text-white/25'}`}>
         {block.content}
         {block.isStreaming && (
           <span className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-orange-400/40 rounded-full align-middle" />
@@ -471,16 +483,16 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
         ) : (
           <CheckIcon className={`h-3 w-3 shrink-0 ${isLight ? 'text-emerald-600/50' : 'text-emerald-400/50'}`} />
         )}
-        <span className={`text-xs font-medium ${toolDisplay.color} ${isRunning ? 'opacity-70 animate-pulse-wave' : 'opacity-50'}`}>
+        <span className={`text-xs font-medium ${toolDisplay.color} ${isRunning ? 'animate-thinking-wave' : isLight ? 'opacity-70' : 'opacity-50'}`}>
           {toolDisplay.label}
         </span>
-        <span className={`flex-1 truncate text-[11px] font-mono ${isLight ? 'text-black/15' : 'text-white/20'}`}>
+        <span className={`flex-1 truncate text-[11px] font-mono ${isLight ? 'text-black/40' : 'text-white/25'}`}>
           {formatToolInputPreview(block.input)}
         </span>
         {block.duration && !isRunning && (
-          <span className={`text-[10px] shrink-0 ${isLight ? 'text-black/15' : 'text-white/15'}`}>{block.duration}ms</span>
+          <span className={`text-[10px] shrink-0 ${isLight ? 'text-black/35' : 'text-white/20'}`}>{block.duration}ms</span>
         )}
-        <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''} ${isLight ? 'text-black/15' : 'text-white/15'}`} />
+        <ChevronRight className={`h-2.5 w-2.5 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''} ${isLight ? 'text-black/35' : 'text-white/20'}`} />
       </button>
       <AnimatePresence>
         {expanded && (
@@ -494,8 +506,8 @@ function ClaudeToolAction({ block }: { block: ToolUseBlock }) {
             <div className={`mt-1.5 rounded-md border p-2.5 ${isLight ? 'border-black/[0.06] bg-black/[0.015]' : 'border-white/5 bg-white/[0.015]'}`}>
               {inputEntries.map(([key, value]) => (
                 <div key={key} className="flex gap-2 py-0.5">
-                  <span className={`text-[11px] shrink-0 font-mono ${isLight ? 'text-black/20' : 'text-white/20'}`}>{key}:</span>
-                  <span className={`text-[11px] font-mono break-all line-clamp-3 ${isLight ? 'text-black/35' : 'text-white/35'}`}>
+                  <span className={`text-[11px] shrink-0 font-mono ${isLight ? 'text-black/45' : 'text-white/25'}`}>{key}:</span>
+                  <span className={`text-[11px] font-mono break-all line-clamp-3 ${isLight ? 'text-black/60' : 'text-white/40'}`}>
                     {key === 'content'
                       ? (typeof value === 'string' ? value.slice(0, 200) + (value.length > 200 ? '...' : '') : JSON.stringify(value).slice(0, 200))
                       : (typeof value === 'string' ? value : JSON.stringify(value, null, 2))
@@ -546,16 +558,16 @@ function ClaudeToolResult({ block }: { block: ToolResultBlock }) {
         }`}
       >
         <ChevronRight className={`h-2.5 w-2.5 transition-transform ${expanded ? 'rotate-90' : ''} ${isLight ? 'text-black/20' : 'text-white/20'}`} />
-        <span className={`text-[11px] ${block.isError ? (isLight ? 'text-red-600/50' : 'text-red-400/50') : (isLight ? 'text-black/25' : 'text-white/25')}`}>
+        <span className={`text-[11px] ${block.isError ? (isLight ? 'text-red-600/50' : 'text-red-400/50') : (isLight ? 'text-black/50' : 'text-white/30')}`}>
           {block.isError ? 'Error' : 'Output'}
         </span>
         {!expanded && (
-          <span className={`text-[10px] truncate max-w-[200px] ${isLight ? 'text-black/15' : 'text-white/15'}`}>
+          <span className={`text-[10px] truncate max-w-[200px] ${isLight ? 'text-black/40' : 'text-white/20'}`}>
             {previewText}
           </span>
         )}
         {isLong && !expanded && (
-          <span className={`text-[10px] ${isLight ? 'text-black/10' : 'text-white/10'}`}>{lines.length} lines</span>
+          <span className={`text-[10px] ${isLight ? 'text-black/30' : 'text-white/15'}`}>{lines.length} lines</span>
         )}
         <div className="flex-1" />
         <button
@@ -578,7 +590,7 @@ function ClaudeToolResult({ block }: { block: ToolResultBlock }) {
               <pre className={`whitespace-pre-wrap break-words font-mono text-[11px] leading-4 max-h-[300px] overflow-y-auto agent-scrollbar ${
                 block.isError
                   ? isLight ? 'text-red-600/40' : 'text-red-400/40'
-                  : isLight ? 'text-black/30' : 'text-white/25'
+                  : isLight ? 'text-black/55' : 'text-white/30'
               }`}>
                 {block.content}
               </pre>

@@ -276,20 +276,18 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
-/* Pulsing wave animation for agent task indicators */
+/* Smooth wave animation for "Thinking..." text - like ocean wave, no jumping */
 @keyframes pulse-wave {
   0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
+    opacity: 0.45;
   }
   50% {
-    opacity: 1;
-    transform: scale(1.2);
+    opacity: 0.85;
   }
 }
 
 .animate-pulse-wave {
-  animation: pulse-wave 1.5s ease-in-out infinite;
+  animation: pulse-wave 2s ease-in-out infinite;
 }
 
 /* Wave ripple for task steps */
@@ -309,22 +307,30 @@
   animation: ripple 1.5s ease-out infinite;
 }
 
-/* Brain icon pulse for thinking */
+/* Brain icon — smooth glow wave, no scale jump */
 @keyframes brain-pulse {
   0%, 100% {
-    opacity: 0.5;
-    transform: scale(1);
-    filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.3));
+    opacity: 0.55;
+    filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.25));
   }
   50% {
     opacity: 1;
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+    filter: drop-shadow(0 0 7px rgba(249, 115, 22, 0.65));
   }
 }
 
 .animate-brain-pulse {
   animation: brain-pulse 2s ease-in-out infinite;
+}
+
+/* Thinking text smooth wave — pure opacity, no transform */
+@keyframes thinking-wave {
+  0%, 100% { opacity: 0.45; }
+  50%       { opacity: 0.9;  }
+}
+
+.animate-thinking-wave {
+  animation: thinking-wave 2s ease-in-out infinite;
 }
 
 /* Task step stagger animation */
