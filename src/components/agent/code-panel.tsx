@@ -1,27 +1,26 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useTheme } from 'next-themes';
 import { useAgentStore, type CodePanelFile } from '@/lib/agent-store';
 import {
   X, Copy, Check, ChevronRight, ChevronDown,
   FileCode, FileText, FileJson, Folder, FolderOpen,
-  Terminal, Maximize2, Minimize2, Eye, Code, Play,
+  Terminal, Maximize2, Minimize2, Eye, Code, RefreshCw,
 } from 'lucide-react';
 
-// ── File icon based on extension ──
 function getFileIcon(fileName: string, className = 'h-3.5 w-3.5') {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
-  if (['ts', 'tsx'].includes(ext)) return <FileCode className={`${className} text-blue-400`} />;
-  if (['js', 'jsx'].includes(ext)) return <FileCode className={`${className} text-yellow-400`} />;
-  if (['py'].includes(ext)) return <FileCode className={`${className} text-green-400`} />;
-  if (['json'].includes(ext)) return <FileJson className={`${className} text-yellow-400`} />;
+  if (['ts', 'tsx'].includes(ext)) return <FileCode className={`${className} text-blue-500`} />;
+  if (['js', 'jsx'].includes(ext)) return <FileCode className={`${className} text-yellow-500`} />;
+  if (['py'].includes(ext)) return <FileCode className={`${className} text-green-500`} />;
+  if (['json'].includes(ext)) return <FileJson className={`${className} text-yellow-500`} />;
   if (['md', 'txt'].includes(ext)) return <FileText className={`${className} text-gray-400`} />;
-  if (['css', 'scss'].includes(ext)) return <FileCode className={`${className} text-purple-400`} />;
-  if (['html'].includes(ext)) return <FileCode className={`${className} text-orange-400`} />;
+  if (['css', 'scss'].includes(ext)) return <FileCode className={`${className} text-purple-500`} />;
+  if (['html'].includes(ext)) return <FileCode className={`${className} text-orange-500`} />;
   return <FileCode className={`${className} text-gray-400`} />;
 }
 
-// ── Detect language from filename ──
 function getLanguage(fileName: string): string {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   const map: Record<string, string> = {
@@ -34,20 +33,25 @@ function getLanguage(fileName: string): string {
   return map[ext] || 'text';
 }
 
-// ── Check if file supports live preview ──
 function isPreviewable(fileName: string): boolean {
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
   return ['html', 'htm', 'svg'].includes(ext);
 }
 
-// ── One Dark syntax colors ──
-const C = {
+// Syntax colors for dark and light
+const C_DARK = {
   keyword: '#c678dd', string: '#98c379', number: '#d19a66', comment: '#5c6370',
   func: '#61afef', type: '#e5c07b', operator: '#56b6c2', tag: '#e06c75',
   punctuation: '#abb2bf', default: '#abb2bf', bracket: '#abb2bf',
 };
+const C_LIGHT = {
+  keyword: '#a626a4', string: '#50a14f', number: '#986801', comment: '#a0a1a7',
+  func: '#4078f2', type: '#c18401', operator: '#0184bc', tag: '#e45649',
+  punctuation: '#383a42', default: '#383a42', bracket: '#383a42',
+};
 
-function highlightLine(line: string, language: string): React.ReactNode[] {
+function highlightLine(line: string, language: string, isLight: boolean): React.ReactNode[] {
+  const C = isLight ? C_LIGHT : C_DARK;
   const tokens: React.ReactNode[] = [];
   let remaining = line;
   let key = 0;
@@ -109,7 +113,6 @@ function highlightLine(line: string, language: string): React.ReactNode[] {
   return tokens;
 }
 
-// ── Build file tree from file list ──
 interface TreeNode {
   name: string;
   path: string;
@@ -145,33 +148,24 @@ function buildFileTree(files: CodePanelFile[]): TreeNode[] {
   return root;
 }
 
-// ── File Tree Component ──
-function FileTree({
-  nodes,
-  activeFilePath,
-  onSelectFile,
-  defaultExpanded,
-}: {
+function FileTree({ nodes, activeFilePath, onSelectFile, isLight }: {
   nodes: TreeNode[];
   activeFilePath: string;
   onSelectFile: (path: string) => void;
-  defaultExpanded?: boolean;
+  isLight: boolean;
 }) {
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
-    if (defaultExpanded) {
-      const allFolders = new Set<string>();
-      const addFolders = (ns: TreeNode[]) => {
-        for (const n of ns) {
-          if (n.isFolder) {
-            allFolders.add(n.path);
-            addFolders(n.children);
-          }
+    const allFolders = new Set<string>();
+    const addFolders = (ns: TreeNode[]) => {
+      for (const n of ns) {
+        if (n.isFolder) {
+          allFolders.add(n.path);
+          addFolders(n.children);
         }
-      };
-      addFolders(nodes);
-      return allFolders;
-    }
-    return new Set();
+      }
+    };
+    addFolders(nodes);
+    return allFolders;
   });
 
   const toggleFolder = (path: string) => {
@@ -189,17 +183,21 @@ function FileTree({
         <div key={node.path}>
           <button
             onClick={() => node.isFolder ? toggleFolder(node.path) : onSelectFile(node.path)}
-            className={`flex items-center gap-1 w-full px-2 py-[3px] text-left transition-colors hover:bg-white/5 ${
-              !node.isFolder && node.path === activeFilePath ? 'bg-white/10 text-white/80' : 'text-white/50'
+            className={`flex items-center gap-1 w-full px-2 py-[3px] text-left transition-colors ${
+              isLight ? 'hover:bg-black/5' : 'hover:bg-white/5'
+            } ${
+              !node.isFolder && node.path === activeFilePath
+                ? isLight ? 'bg-black/[0.06] text-black/80' : 'bg-white/10 text-white/80'
+                : isLight ? 'text-black/50' : 'text-white/50'
             }`}
             style={{ paddingLeft: `${8 + node.depth * 14}px` }}
           >
             {node.isFolder ? (
               <>
                 {expandedFolders.has(node.path) ? (
-                  <ChevronDown className="h-3 w-3 text-white/30 shrink-0" />
+                  <ChevronDown className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/25' : 'text-white/30'}`} />
                 ) : (
-                  <ChevronRight className="h-3 w-3 text-white/30 shrink-0" />
+                  <ChevronRight className={`h-3 w-3 shrink-0 ${isLight ? 'text-black/25' : 'text-white/30'}`} />
                 )}
                 {expandedFolders.has(node.path) ? (
                   <FolderOpen className="h-3.5 w-3.5 text-yellow-500/70 shrink-0" />
@@ -220,6 +218,7 @@ function FileTree({
               nodes={node.children}
               activeFilePath={activeFilePath}
               onSelectFile={onSelectFile}
+              isLight={isLight}
             />
           )}
         </div>
@@ -228,8 +227,8 @@ function FileTree({
   );
 }
 
-// ── Live Preview Component ──
-function LivePreview({ content, fileName }: { content: string; fileName: string }) {
+// Live Preview Component
+function LivePreview({ content, fileName, isLight }: { content: string; fileName: string; isLight: boolean }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const ext = fileName.split('.').pop()?.toLowerCase() || '';
 
@@ -237,12 +236,10 @@ function LivePreview({ content, fileName }: { content: string; fileName: string 
     if (ext === 'svg') {
       return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(content)}`;
     }
-    // For HTML - create a blob URL
     const blob = new Blob([content], { type: 'text/html' });
     return URL.createObjectURL(blob);
   }, [content, ext]);
 
-  // Cleanup blob URLs
   useEffect(() => {
     return () => {
       if (previewSrc.startsWith('blob:')) {
@@ -264,9 +261,7 @@ function LivePreview({ content, fileName }: { content: string; fileName: string 
   );
 }
 
-// ════════════════════════════════════════════════
-// ── Main CodePanel Component ──
-// ════════════════════════════════════════════════
+// Main CodePanel Component
 export function CodePanel() {
   const {
     codePanelOpen,
@@ -276,12 +271,14 @@ export function CodePanel() {
     closeCodePanel,
   } = useAgentStore();
 
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
+
   const [copied, setCopied] = useState(false);
   const [showExplorer, setShowExplorer] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
   const [panelWidth, setPanelWidth] = useState(typeof window !== 'undefined' && window.innerWidth < 768 ? window.innerWidth : 600);
   const [isMaximized, setIsMaximized] = useState(false);
-  // 'code' | 'preview' | 'split'
   const [viewMode, setViewMode] = useState<'code' | 'preview' | 'split'>('code');
   const isDragging = useRef(false);
 
@@ -300,7 +297,6 @@ export function CodePanel() {
     if (index >= 0) setCodePanelActiveIndex(index);
   }, [codePanelFiles, setCodePanelActiveIndex]);
 
-  // Auto-switch to preview mode for HTML files
   useEffect(() => {
     if (activeFile && isPreviewable(activeFile.fileName)) {
       setViewMode('split');
@@ -309,7 +305,6 @@ export function CodePanel() {
     }
   }, [activeFile?.fileName]);
 
-  // Adjust panel width on resize
   useEffect(() => {
     const onResize = () => {
       if (window.innerWidth < 768) {
@@ -321,7 +316,6 @@ export function CodePanel() {
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  // Resize drag
   useEffect(() => {
     if (!codePanelOpen || isMaximized) return;
     const onMove = (e: MouseEvent) => {
@@ -347,12 +341,21 @@ export function CodePanel() {
   const fileTree = buildFileTree(codePanelFiles);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
 
+  const bgColor300 = isLight ? '#f8f8f8' : '#1e1e1e';
+  const bgColor200 = isLight ? '#f0f0f0' : '#252526';
+  const borderColor = isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.08)';
+  const borderSubtle = isLight ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.04)';
+
   return (
     <div
-      className={`flex h-full shrink-0 border-l border-white/[0.08] bg-[#1e1e1e] ${isMobile ? 'fixed inset-0 z-50 border-l-0' : ''}`}
-      style={{ width: isMaximized ? '100%' : isMobile ? '100%' : `${panelWidth}px` }}
+      className={`flex h-full shrink-0 ${isMobile ? 'fixed inset-0 z-50' : ''}`}
+      style={{
+        width: isMaximized ? '100%' : isMobile ? '100%' : `${panelWidth}px`,
+        borderLeft: isMobile ? 'none' : `1px solid ${borderColor}`,
+        backgroundColor: bgColor300,
+      }}
     >
-      {/* ── Resize Handle ── */}
+      {/* Resize Handle */}
       {!isMaximized && !isMobile && (
         <div
           className="w-1 cursor-col-resize hover:bg-blue-500/30 active:bg-blue-500/50 transition-colors"
@@ -366,12 +369,11 @@ export function CodePanel() {
       )}
 
       <div className="flex flex-1 flex-col min-w-0">
-        {/* ── Activity Bar ── */}
-        <div className="flex items-center h-9 px-2 border-b border-white/[0.06] bg-[#252526] shrink-0 gap-1">
-          {/* Toggle explorer */}
+        {/* Activity Bar */}
+        <div className="flex items-center h-9 px-2 shrink-0 gap-1" style={{ backgroundColor: bgColor200, borderBottom: `1px solid ${borderColor}` }}>
           <button
             onClick={() => setShowExplorer(!showExplorer)}
-            className={`p-1.5 rounded transition-colors ${showExplorer ? 'text-white/60 bg-white/10' : 'text-white/25 hover:text-white/50'}`}
+            className={`p-1.5 rounded transition-colors ${showExplorer ? (isLight ? 'text-black/60 bg-black/10' : 'text-white/60 bg-white/10') : (isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50')}`}
             title="Toggle Explorer"
           >
             <Folder className="h-4 w-4" />
@@ -379,34 +381,33 @@ export function CodePanel() {
 
           <div className="flex-1" />
 
-          {/* File name */}
           <div className="flex items-center gap-1.5">
-            {getFileIcon(activeFile.fileName, 'h-3.5 w-3.5')}
-            <span className="text-[11px] text-white/50 font-mono">{activeFile.fileName.split('/').pop()}</span>
+            {getFileIcon(activeFile.fileName)}
+            <span className={`text-[11px] font-mono ${isLight ? 'text-black/50' : 'text-white/50'}`}>{activeFile.fileName.split('/').pop()}</span>
           </div>
 
           <div className="flex-1" />
 
-          {/* View Mode Toggle - only for previewable files */}
+          {/* View Mode Toggle */}
           {canPreview && (
-            <div className="flex items-center bg-white/5 rounded-md p-0.5 gap-0.5">
+            <div className={`flex items-center rounded-md p-0.5 gap-0.5 ${isLight ? 'bg-black/5' : 'bg-white/5'}`}>
               <button
                 onClick={() => setViewMode('code')}
-                className={`p-1 rounded transition-colors ${viewMode === 'code' ? 'text-white/70 bg-white/10' : 'text-white/25 hover:text-white/50'}`}
+                className={`p-1 rounded transition-colors ${viewMode === 'code' ? (isLight ? 'text-black/70 bg-black/10' : 'text-white/70 bg-white/10') : (isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50')}`}
                 title="Code View"
               >
                 <Code className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('split')}
-                className={`p-1 rounded transition-colors ${viewMode === 'split' ? 'text-white/70 bg-white/10' : 'text-white/25 hover:text-white/50'}`}
+                className={`p-1 rounded transition-colors ${viewMode === 'split' ? (isLight ? 'text-black/70 bg-black/10' : 'text-white/70 bg-white/10') : (isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50')}`}
                 title="Split View"
               >
                 <Maximize2 className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => setViewMode('preview')}
-                className={`p-1 rounded transition-colors ${viewMode === 'preview' ? 'text-white/70 bg-white/10' : 'text-white/25 hover:text-white/50'}`}
+                className={`p-1 rounded transition-colors ${viewMode === 'preview' ? (isLight ? 'text-black/70 bg-black/10' : 'text-white/70 bg-white/10') : (isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50')}`}
                 title="Preview Only"
               >
                 <Eye className="h-3.5 w-3.5" />
@@ -414,121 +415,116 @@ export function CodePanel() {
             </div>
           )}
 
-          {/* Toggle terminal */}
           <button
             onClick={() => setShowTerminal(!showTerminal)}
-            className={`p-1.5 rounded transition-colors ${showTerminal ? 'text-white/60 bg-white/10' : 'text-white/25 hover:text-white/50'}`}
+            className={`p-1.5 rounded transition-colors ${showTerminal ? (isLight ? 'text-black/60 bg-black/10' : 'text-white/60 bg-white/10') : (isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50')}`}
             title="Toggle Terminal"
           >
             <Terminal className="h-4 w-4" />
           </button>
 
-          {/* Maximize/Restore */}
           {!isMobile && (
             <button
               onClick={() => setIsMaximized(!isMaximized)}
-              className="p-1.5 rounded text-white/25 hover:text-white/50 transition-colors"
+              className={`p-1.5 rounded transition-colors ${isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50'}`}
               title={isMaximized ? 'Restore' : 'Maximize'}
             >
               {isMaximized ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
             </button>
           )}
 
-          {/* Copy */}
           <button
             onClick={handleCopy}
-            className="p-1.5 rounded text-white/25 hover:text-white/50 transition-colors"
+            className={`p-1.5 rounded transition-colors ${isLight ? 'text-black/25 hover:text-black/50' : 'text-white/25 hover:text-white/50'}`}
             title="Copy"
           >
-            {copied ? <Check className="h-3.5 w-3.5 text-green-400" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
           </button>
 
-          {/* Close */}
           <button
             onClick={closeCodePanel}
-            className="p-1.5 rounded text-white/25 hover:text-red-400/70 transition-colors"
+            className={`p-1.5 rounded transition-colors ${isLight ? 'text-black/25 hover:text-red-500/70' : 'text-white/25 hover:text-red-400/70'}`}
             title="Close"
           >
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* ── Main Content Area ── */}
+        {/* Main Content Area */}
         <div className="flex flex-1 overflow-hidden">
-          {/* ── File Explorer Sidebar ── */}
+          {/* File Explorer Sidebar */}
           {showExplorer && codePanelFiles.length > 0 && (
-            <div className="w-32 sm:w-48 shrink-0 border-r border-white/[0.06] bg-[#252526] overflow-y-auto code-panel-scrollbar">
-              <div className="px-3 py-2 text-[10px] font-semibold text-white/30 uppercase tracking-wider">
+            <div className="w-32 sm:w-48 shrink-0 overflow-y-auto code-panel-scrollbar" style={{ backgroundColor: bgColor200, borderRight: `1px solid ${borderColor}` }}>
+              <div className={`px-3 py-2 text-[10px] font-semibold uppercase tracking-wider ${isLight ? 'text-black/30' : 'text-white/30'}`}>
                 Explorer
               </div>
               <FileTree
                 nodes={fileTree}
                 activeFilePath={activeFile.fileName}
                 onSelectFile={handleSelectFile}
-                defaultExpanded
+                isLight={isLight}
               />
             </div>
           )}
 
-          {/* ── Editor + Preview Area ── */}
+          {/* Editor + Preview Area */}
           <div className="flex flex-1 flex-col min-w-0">
-            {/* ── File Tabs ── */}
-            <div className="flex items-center bg-[#252526] border-b border-white/[0.06] shrink-0 overflow-x-auto code-panel-scrollbar">
+            {/* File Tabs */}
+            <div className="flex items-center shrink-0 overflow-x-auto code-panel-scrollbar" style={{ backgroundColor: bgColor200, borderBottom: `1px solid ${borderSubtle}` }}>
               {codePanelFiles.map((file, i) => (
                 <button
                   key={file.fileName}
                   onClick={() => setCodePanelActiveIndex(i)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono border-r border-white/[0.06] transition-colors whitespace-nowrap shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-mono whitespace-nowrap shrink-0 transition-colors ${
                     i === codePanelActiveIndex
-                      ? 'bg-[#1e1e1e] text-white/80 border-t-2 border-t-blue-500/80'
-                      : 'text-white/35 hover:text-white/50 hover:bg-white/5 border-t-2 border-t-transparent'
+                      ? isLight
+                        ? 'text-black/80 border-t-2 border-t-blue-500/80'
+                        : 'text-white/80 border-t-2 border-t-blue-500/80'
+                      : isLight
+                        ? 'text-black/35 hover:text-black/50 border-t-2 border-t-transparent'
+                        : 'text-white/35 hover:text-white/50 border-t-2 border-t-transparent'
                   }`}
+                  style={{ backgroundColor: i === codePanelActiveIndex ? bgColor300 : 'transparent', borderRight: `1px solid ${borderSubtle}` }}
                 >
-                  {getFileIcon(file.fileName, 'h-3 w-3')}
+                  {getFileIcon(file.fileName)}
                   <span>{file.fileName.split('/').pop()}</span>
-                  <span
-                    onClick={(e) => { e.stopPropagation(); }}
-                    className="ml-1 text-white/15 hover:text-white/50"
-                  >
-                    ×
-                  </span>
                 </button>
               ))}
             </div>
 
-            {/* ── Breadcrumb Path ── */}
-            <div className="flex items-center gap-1 px-3 py-1 bg-[#1e1e1e] border-b border-white/[0.04] shrink-0">
+            {/* Breadcrumb Path */}
+            <div className="flex items-center gap-1 px-3 py-1 shrink-0" style={{ backgroundColor: bgColor300, borderBottom: `1px solid ${borderSubtle}` }}>
               {activeFile.fileName.split('/').map((segment, i, arr) => (
                 <span key={i} className="flex items-center gap-1">
-                  {i > 0 && <ChevronRight className="h-2.5 w-2.5 text-white/10" />}
-                  <span className={`text-[10px] font-mono ${i === arr.length - 1 ? 'text-white/40' : 'text-white/20'}`}>
+                  {i > 0 && <ChevronRight className={`h-2.5 w-2.5 ${isLight ? 'text-black/10' : 'text-white/10'}`} />}
+                  <span className={`text-[10px] font-mono ${i === arr.length - 1 ? (isLight ? 'text-black/40' : 'text-white/40') : (isLight ? 'text-black/20' : 'text-white/20')}`}>
                     {segment}
                   </span>
                 </span>
               ))}
-              <span className="ml-auto text-[10px] text-white/15 font-mono">
+              <span className={`ml-auto text-[10px] font-mono ${isLight ? 'text-black/15' : 'text-white/15'}`}>
                 Ln {lineCount}, {language}
               </span>
             </div>
 
-            {/* ── Code + Preview Split ── */}
+            {/* Code + Preview Split */}
             <div className="flex flex-1 overflow-hidden">
               {/* Code View */}
               {(viewMode === 'code' || viewMode === 'split') && (
                 <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col min-w-0 overflow-hidden`}>
-                  <div className="flex-1 overflow-auto code-panel-scrollbar bg-[#1e1e1e]">
+                  <div className="flex-1 overflow-auto code-panel-scrollbar" style={{ backgroundColor: bgColor300 }}>
                     <div className="flex min-h-full">
-                      <div className="shrink-0 py-2 pr-3 pl-4 text-right select-none sticky left-0 bg-[#1e1e1e]">
+                      <div className="shrink-0 py-2 pr-3 pl-4 text-right select-none sticky left-0" style={{ backgroundColor: bgColor300 }}>
                         {lines.map((_, i) => (
-                          <div key={i} className="text-[12px] leading-[20px] font-mono text-white/20 h-5">
+                          <div key={i} className={`text-[12px] leading-[20px] font-mono h-5 ${isLight ? 'text-black/20' : 'text-white/20'}`}>
                             {i + 1}
                           </div>
                         ))}
                       </div>
                       <pre className="flex-1 py-2 pr-6 text-[12px] leading-[20px] font-mono whitespace-pre overflow-x-auto">
                         {lines.map((line, i) => (
-                          <div key={i} className="h-5 hover:bg-white/[0.02] px-1">
-                            {highlightLine(line, language)}
+                          <div key={i} className={`h-5 px-1 ${isLight ? 'hover:bg-black/[0.03]' : 'hover:bg-white/[0.02]'}`}>
+                            {highlightLine(line, language, isLight)}
                           </div>
                         ))}
                       </pre>
@@ -539,36 +535,31 @@ export function CodePanel() {
 
               {/* Preview Panel */}
               {(viewMode === 'preview' || viewMode === 'split') && canPreview && (
-                <div className={`${viewMode === 'split' ? 'w-1/2 border-l border-white/[0.08]' : 'w-full'} flex flex-col min-w-0`}>
-                  {/* Preview Header */}
-                  <div className="flex items-center h-8 px-3 bg-[#252526] border-b border-white/[0.06] shrink-0">
-                    <Eye className="h-3.5 w-3.5 text-emerald-400/60 mr-1.5" />
-                    <span className="text-[10px] text-white/40 font-mono uppercase tracking-wider">Live Preview</span>
+                <div className={`${viewMode === 'split' ? 'w-1/2' : 'w-full'} flex flex-col min-w-0`} style={{ borderLeft: viewMode === 'split' ? `1px solid ${borderColor}` : 'none' }}>
+                  <div className="flex items-center h-8 px-3 shrink-0" style={{ backgroundColor: bgColor200, borderBottom: `1px solid ${borderSubtle}` }}>
+                    <Eye className={`h-3.5 w-3.5 mr-1.5 ${isLight ? 'text-emerald-600/60' : 'text-emerald-400/60'}`} />
+                    <span className={`text-[10px] font-mono uppercase tracking-wider ${isLight ? 'text-black/40' : 'text-white/40'}`}>Live Preview</span>
                     <div className="flex-1" />
                     <button
-                      onClick={() => {
-                        // Refresh preview by re-rendering
-                        setViewMode(v => v);
-                      }}
-                      className="p-1 rounded text-white/20 hover:text-white/50 transition-colors"
+                      onClick={() => setViewMode(v => v)}
+                      className={`p-1 rounded transition-colors ${isLight ? 'text-black/20 hover:text-black/50' : 'text-white/20 hover:text-white/50'}`}
                       title="Refresh Preview"
                     >
-                      <Play className="h-3 w-3" />
+                      <RefreshCw className="h-3 w-3" />
                     </button>
                   </div>
-                  {/* Preview Content */}
-                  <LivePreview content={activeFile.content} fileName={activeFile.fileName} />
+                  <LivePreview content={activeFile.content} fileName={activeFile.fileName} isLight={isLight} />
                 </div>
               )}
 
               {/* Non-previewable file message */}
               {viewMode === 'preview' && !canPreview && (
-                <div className="w-full flex flex-col items-center justify-center text-white/20 gap-2">
+                <div className={`w-full flex flex-col items-center justify-center gap-2 ${isLight ? 'text-black/20' : 'text-white/20'}`}>
                   <Eye className="h-8 w-8 opacity-30" />
                   <span className="text-xs">Preview not available for this file type</span>
                   <button
                     onClick={() => setViewMode('code')}
-                    className="text-[10px] text-orange-400/50 hover:text-orange-400/80 underline"
+                    className="text-[10px] text-orange-500/50 hover:text-orange-500/80 underline"
                   >
                     Switch to Code View
                   </button>
@@ -576,15 +567,15 @@ export function CodePanel() {
               )}
             </div>
 
-            {/* ── Terminal Section ── */}
+            {/* Terminal Section */}
             {showTerminal && (
-              <div className="h-36 shrink-0 border-t border-white/[0.06] bg-[#1a1a1a] flex flex-col">
-                <div className="flex items-center px-3 py-1 bg-[#252526] border-b border-white/[0.06] shrink-0">
-                  <Terminal className="h-3 w-3 text-white/30 mr-1.5" />
-                  <span className="text-[10px] text-white/30 font-mono uppercase tracking-wider">Terminal</span>
+              <div className="h-36 shrink-0 flex flex-col" style={{ backgroundColor: isLight ? '#e8e8e8' : '#1a1a1a', borderTop: `1px solid ${borderSubtle}` }}>
+                <div className="flex items-center px-3 py-1 shrink-0" style={{ backgroundColor: bgColor200, borderBottom: `1px solid ${borderSubtle}` }}>
+                  <Terminal className={`h-3 w-3 mr-1.5 ${isLight ? 'text-black/30' : 'text-white/30'}`} />
+                  <span className={`text-[10px] font-mono uppercase tracking-wider ${isLight ? 'text-black/30' : 'text-white/30'}`}>Terminal</span>
                 </div>
-                <div className="flex-1 p-2 font-mono text-[11px] text-white/40 overflow-auto code-panel-scrollbar">
-                  <div className="text-emerald-400/50">$ <span className="text-white/30">Ready</span></div>
+                <div className={`flex-1 p-2 font-mono text-[11px] overflow-auto code-panel-scrollbar ${isLight ? 'text-black/40' : 'text-white/40'}`}>
+                  <div className={isLight ? 'text-emerald-600/50' : 'text-emerald-400/50'}>$ <span className={isLight ? 'text-black/30' : 'text-white/30'}>Ready</span></div>
                 </div>
               </div>
             )}

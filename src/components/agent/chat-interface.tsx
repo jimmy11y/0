@@ -1,5 +1,6 @@
 'use client';
 
+import { useTheme } from 'next-themes';
 import { WelcomeScreen } from './welcome-screen';
 import { ChatInput } from './chat-input';
 import { MessageList } from './message-list';
@@ -14,6 +15,8 @@ export function ChatInterface() {
   const { messages, isLoading, codePanelOpen, agentMode } = useAgentStore();
   const { sendMessage, retryMessage, stopGeneration } = useAgentChat();
   const hasMessages = messages.length > 0;
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   const handleSend = (content: string, files?: AttachedFile[]) => {
     let messageContent = content;
@@ -31,9 +34,7 @@ export function ChatInterface() {
 
   return (
     <div className="flex flex-1 overflow-hidden min-w-0">
-      {/* Chat area */}
       <div className="relative flex flex-1 flex-col overflow-hidden min-w-0">
-        {/* Messages or Welcome Screen */}
         {hasMessages ? (
           <MessageList messages={messages} onRetry={retryMessage} />
         ) : (
@@ -42,12 +43,15 @@ export function ChatInterface() {
           />
         )}
 
-        {/* Stop generation button */}
         {isLoading && (
           <div className="absolute bottom-[76px] sm:bottom-24 left-1/2 -translate-x-1/2 z-40">
             <button
               onClick={stopGeneration}
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 text-xs text-white/50 backdrop-blur-sm transition-colors hover:bg-white/10 hover:text-white/70"
+              className={`flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs backdrop-blur-sm transition-colors ${
+                isLight
+                  ? 'border-black/[0.08] bg-white/80 text-black/50 hover:bg-white hover:text-black/70'
+                  : 'border-white/10 bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/70'
+              }`}
             >
               <Square className="h-3 w-3 fill-current" />
               Stop
@@ -55,14 +59,10 @@ export function ChatInterface() {
           </div>
         )}
 
-        {/* Terminal - only opens when agent runs Bash commands */}
         <MacTerminal />
-
-        {/* Chat Input */}
         <ChatInput onSend={handleSend} />
       </div>
 
-      {/* Code Panel - side panel for file viewing */}
       <CodePanel />
     </div>
   );

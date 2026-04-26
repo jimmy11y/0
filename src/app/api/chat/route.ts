@@ -310,6 +310,28 @@ Rules:
 const CHAT_SYSTEM_PROMPT = `You are a helpful, accurate, and direct AI assistant. Provide clear, complete answers without unnecessary filler. If unsure, say so rather than guessing.`;
 
 // ==========================================
+// Filter raw tool call XML/text from model output
+// Some models output tool calls as text instead of structured API calls
+// ==========================================
+function filterRawToolCalls(text: string): string {
+  // Remove DeepSeek-style tool call markers: <|DSML|>tool_calls, <|DSML|>invoke, etc.
+  let filtered = text.replace(/<\|DSML\|>[\s\S]*?(?=<\|DSML\|>|$)/g, '');
+  // Remove other common tool call XML patterns
+  filtered = filtered.replace(/<tool_calls>[\s\S]*?<\/tool_calls>/gi, '');
+  filtered = filtered.replace(/<tool_call[\s\S]*?<\/tool_call>/gi, '');
+  filtered = filtered.replace(/<invoke[\s\S]*?<\/invoke>/gi, '');
+  filtered = filtered.replace(/<function_call[\s\S]*?<\/function_call>/gi, '');
+  // Remove <｜...｜> special token patterns (fullwidth pipe variant)
+  filtered = filtered.replace(/＜\|[^＞]*\|＞[\s\S]*?(?=＜\|[^＞]*\|＞|$)/g, '');
+  // Remove partially outputted tool call text patterns
+  filtered = filtered.replace(/```tool_call[\s\S]*?```/gi, '');
+  filtered = filtered.replace(/```function[\s\S]*?```/gi, '');
+  // Clean up multiple newlines left behind
+  filtered = filtered.replace(/\n{3,}/g, '\n\n');
+  return filtered.trim();
+}
+
+// ==========================================
 // Real Tool Execution (Vercel-compatible)
 // ==========================================
 async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
@@ -518,11 +540,15 @@ async function runAgentLoop(
       // If no tool calls, we're done - stream the final text
       if (!message.tool_calls || message.tool_calls.length === 0) {
         if (message.content) {
-          const content = message.content;
-          const chunks = content.split(/(\s+)/);
-          for (const chunk of chunks) {
-            send('text_delta', { content: chunk });
-            await new Promise(r => setTimeout(r, 8));
+          // Filter out any raw tool call XML that the model might output as text
+          let content = message.content;
+          content = filterRawToolCalls(content);
+          if (content.trim()) {
+            const chunks = content.split(/(\s+)/);
+            for (const chunk of chunks) {
+              send('text_delta', { content: chunk });
+              await new Promise(r => setTimeout(r, 8));
+            }
           }
         }
         return;
@@ -603,7 +629,10 @@ async function runAgentLoop(
           for await (const chunk of response) {
             const delta = chunk.choices?.[0]?.delta?.content;
             if (delta) {
-              send('text_delta', { content: delta });
+              const filtered = filterRawToolCalls(delta);
+              if (filtered) {
+                send('text_delta', { content: filtered });
+              }
             }
           }
         } catch (streamError) {
@@ -644,7 +673,11 @@ async function streamChat(
     for await (const chunk of response) {
       const delta = chunk.choices?.[0]?.delta?.content;
       if (delta) {
-        send('text_delta', { content: delta });
+        // Filter raw tool call XML from streaming output
+        const filtered = filterRawToolCalls(delta);
+        if (filtered) {
+          send('text_delta', { content: filtered });
+        }
       }
     }
   } catch {

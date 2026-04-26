@@ -283,6 +283,17 @@ export function useAgentChat() {
                   }
 
                   case 'text_delta': {
+                    // Filter raw tool call XML from text content (safety net)
+                    const rawContent = data.content || '';
+                    const textContent = rawContent
+                      .replace(/<\|DSML\|>[\s\S]*?(?=<\|DSML\|>|$)/g, '')
+                      .replace(/<tool_calls>[\s\S]*?<\/tool_calls>/gi, '')
+                      .replace(/<tool_call[\s\S]*?<\/tool_call>/gi, '')
+                      .replace(/<invoke[\s\S]*?<\/invoke>/gi, '')
+                      .replace(/<function_call[\s\S]*?<\/function_call>/gi, '');
+                    
+                    if (!textContent.trim()) break;
+
                     // Finalize any open thinking/tool blocks
                     const msg2 = useAgentStore.getState().messages.find(m => m.id === assistantId);
                     if (msg2?.blocks) {
@@ -297,16 +308,16 @@ export function useAgentChat() {
                     const msg3 = useAgentStore.getState().messages.find(m => m.id === assistantId);
                     const lastBlock = msg3?.blocks?.[msg3.blocks.length - 1];
                     if (lastBlock?.type === 'text') {
-                      appendToLastTextBlock(assistantId, data.content);
+                      appendToLastTextBlock(assistantId, textContent);
                     } else {
                       const textBlock: ContentBlock = {
                         type: 'text',
-                        content: data.content,
+                        content: textContent,
                         isStreaming: true,
                       };
                       addContentBlock(assistantId, textBlock);
                     }
-                    appendMessageContent(assistantId, data.content);
+                    appendMessageContent(assistantId, textContent);
                     break;
                   }
 
