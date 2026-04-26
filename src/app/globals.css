@@ -1,0 +1,610 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Agent theme variables - dark mode */
+.agent-dark {
+  --agent-bg-100: hsl(60, 2.7%, 14.5%);
+  --agent-bg-200: hsl(30, 3.3%, 11.8%);
+  --agent-bg-300: hsl(60, 2.6%, 7.6%);
+  --agent-bg-000: hsl(60, 2.1%, 18.4%);
+  --agent-text-100: hsl(48, 33.3%, 97.1%);
+  --agent-text-200: hsl(50, 9%, 73.7%);
+  --agent-text-400: hsl(48, 4.8%, 59.2%);
+  --agent-text-500: hsl(48, 4.8%, 59.2%);
+  --agent-border-300: hsl(51, 16.5%, 84.5%);
+  --agent-accent-brand: hsl(15, 63.1%, 59.6%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html, body {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+/* Safe area bottom padding for notched phones */
+.safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px));
+}
+
+/* Custom scrollbar - 01 11 AI style */
+.agent-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.agent-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.agent-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(48, 4.8%, 59.2% / 20%);
+  border-radius: 3px;
+}
+
+.agent-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(48, 4.8%, 59.2% / 40%);
+}
+
+/* Terminal scrollbar */
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(0, 0%, 30%);
+  border-radius: 2px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(0, 0%, 40%);
+}
+
+/* Auto-expanding textarea */
+.chat-textarea {
+  field-sizing: content;
+  min-height: 24px;
+  max-height: 200px;
+}
+
+/* Prose overrides for 01 11 AI style */
+.prose-invert {
+  --tw-prose-body: rgba(255, 255, 255, 0.85);
+  --tw-prose-headings: rgba(255, 255, 255, 0.9);
+  --tw-prose-links: rgba(249, 115, 22, 0.7);
+  --tw-prose-bold: rgba(255, 255, 255, 0.9);
+  --tw-prose-code: rgba(249, 115, 22, 0.7);
+  --tw-prose-pre-bg: rgba(0, 0, 0, 0.4);
+  --tw-prose-pre-code: rgba(255, 255, 255, 0.6);
+}
+
+/* Streaming cursor animation */
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
+}
+
+/* Smooth expand animation for thinking blocks */
+.thinking-expand {
+  animation: expandDown 0.15s ease-out;
+}
+
+@keyframes expandDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+/* Code panel scrollbar */
+.code-panel-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.code-panel-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.code-panel-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.code-panel-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.code-panel-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Pulsing wave animation for agent task indicators */
+@keyframes pulse-wave {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.animate-pulse-wave {
+  animation: pulse-wave 1.5s ease-in-out infinite;
+}
+
+/* Wave ripple for task steps */
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(249, 115, 22, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+  }
+}
+
+.animate-ripple {
+  animation: ripple 1.5s ease-out infinite;
+}
+
+/* Brain icon pulse for thinking */
+@keyframes brain-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+    filter: drop-shadow(0 0 2px rgba(249, 115, 22, 0.3));
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6));
+  }
+}
+
+.animate-brain-pulse {
+  animation: brain-pulse 2s ease-in-out infinite;
+}
+
+/* Task step stagger animation */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-step-in {
+  animation: step-in 0.3s ease-out forwards;
+}
+
+/* ============================================
+   AUTH SCREEN - Claude-inspired design
+   ============================================ */
+
+/* Animated gradient orbs */
+.auth-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+  animation: auth-orb-float 12s ease-in-out infinite;
+}
+
+.auth-orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, #d97706, transparent 70%);
+  top: -10%;
+  right: -5%;
+  animation-delay: 0s;
+}
+
+.auth-orb-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, #ea580c, transparent 70%);
+  bottom: -10%;
+  left: -5%;
+  animation-delay: -4s;
+}
+
+.auth-orb-3 {
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, #f59e0b, transparent 70%);
+  top: 40%;
+  left: 50%;
+  transform: translateX(-50%);
+  animation-delay: -8s;
+  opacity: 0.08;
+}
+
+@keyframes auth-orb-float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.05);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+/* Logo container */
+.auth-logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-logo-inner {
+  position: relative;
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #d97706, #ea580c);
+  box-shadow:
+    0 0 20px rgba(217, 119, 6, 0.15),
+    0 0 60px rgba(217, 119, 6, 0.05);
+}
+
+.auth-logo-glow {
+  position: absolute;
+  inset: -8px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.2), rgba(234, 88, 12, 0.1));
+  filter: blur(12px);
+  animation: auth-glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes auth-glow-pulse {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* Auth card */
+.auth-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 32px 28px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+.auth-card:focus-within {
+  border-color: rgba(217, 119, 6, 0.2);
+  box-shadow: 0 0 0 1px rgba(217, 119, 6, 0.05);
+}
+
+.auth-success {
+  border-color: rgba(52, 211, 153, 0.3) !important;
+  box-shadow: 0 0 30px rgba(52, 211, 153, 0.05) !important;
+}
+
+/* Shake animation */
+.auth-shake {
+  animation: auth-shake 0.5s ease-in-out;
+}
+
+@keyframes auth-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/* Auth input */
+.auth-input {
+  width: 100%;
+  height: 48px;
+  padding: 0 44px 0 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  outline: none;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.auth-input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  letter-spacing: 0;
+}
+
+.auth-input:focus {
+  border-color: rgba(217, 119, 6, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.08);
+}
+
+.auth-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Eye button */
+.auth-eye-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px;
+  color: rgba(255, 255, 255, 0.25);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-eye-btn:hover {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Submit button */
+.auth-submit-btn {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #d97706, #ea580c);
+  color: white;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.2);
+  font-family: inherit;
+}
+
+.auth-submit-btn:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.3);
+  transform: translateY(-1px);
+}
+
+.auth-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.2);
+}
+
+.auth-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================
+   RESPONSIVE - Mobile & Tablet adaptations
+   ============================================ */
+
+/* Small phones (< 375px) */
+@media (max-width: 374px) {
+  .auth-card {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
+
+  .auth-logo-inner {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .auth-input {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .auth-submit-btn {
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .auth-orb-1,
+  .auth-orb-2 {
+    width: 250px;
+    height: 250px;
+  }
+
+  .auth-orb-3 {
+    width: 150px;
+    height: 150px;
+  }
+}
+
+/* Mobile (< 768px) */
+@media (max-width: 767px) {
+  /* Sidebar hidden by default on mobile - handled by component */
+  /* Code panel full screen on mobile */
+  .code-panel-files {
+    flex-direction: column;
+  }
+}
+
+/* Tablet (768px - 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .auth-card {
+    padding: 32px 32px;
+  }
+}
+
+/* Safe area for notched phones */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .auth-screen {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Landscape phone */
+@media (max-height: 500px) and (orientation: landscape) {
+  .auth-card {
+    padding: 20px 24px;
+  }
+
+  .auth-logo-inner {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+  }
+
+  .auth-logo-glow {
+    display: none;
+  }
+
+  .auth-orb {
+    display: none;
+  }
+}
